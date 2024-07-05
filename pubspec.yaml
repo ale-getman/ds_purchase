@@ -13,10 +13,8 @@ dependencies:
 
   fimber: ^0.7.0
   firebase_analytics: ^10.10.7
-  ds_common: #^0.1.20
-    path: /Users/altush/Projects/ds_common
-  ds_ads: #^0.7.0
-    path: /Users/altush/Projects/ds_ads
+  ds_common: ^0.1.20
+  ds_ads: ^0.7.0
 
   adapty_flutter: ^2.9.3
 

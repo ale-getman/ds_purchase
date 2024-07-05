@@ -21,10 +21,10 @@ packages:
     dependency: transitive
     description:
       name: adjust_sdk
-      sha256: e8942cde401e4a7f5719f4c6bf014caa2f5a4b381ac8756e9d2395c39813b8e1
+      sha256: "361b9485187586142675d5d8602531d22744b27f4cf9e543422a0ad6893f71d5"
       url: "https://pub.dev"
     source: hosted
-    version: "4.37.1"
+    version: "4.38.1"
   applovin_max:
     dependency: transitive
     description:
@@ -100,17 +100,19 @@ packages:
   ds_ads:
     dependency: transitive
     description:
-      path: "/Users/altush/Projects/ds_ads"
-      relative: false
-    source: path
+      name: ds_ads
+      sha256: "5931f9a7baed4274ab42692e89590a77e8ed47cbff8d05be4bf8d79b6d5d7894"
+      url: "https://pub.dev"
+    source: hosted
     version: "0.7.0"
   ds_common:
     dependency: transitive
     description:
-      path: "/Users/altush/Projects/ds_common"
-      relative: false
-    source: path
-    version: "0.1.19"
+      name: ds_common
+      sha256: d98e25a9580c601b406b72460ff1e9fb68ea8d6c9da2dc84716e73b607eed0f9
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.1.20"
   ds_purchase:
     dependency: "direct main"
     description:
