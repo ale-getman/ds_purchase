@@ -1,0 +1,35 @@
+name: ds_purchase
+description: "Purchase SectDev components for Flutter projects (https://sect.dev/). Currently supports Adapty only"
+version: 0.0.1
+homepage: https://github.com/al-tush/ds_purchase
+
+environment:
+  sdk: '>=3.3.4 <4.0.0'
+  flutter: '>=3.3.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  fimber: ^0.7.0
+  firebase_analytics: ^10.10.7
+  ds_common: #^0.1.20
+    path: /Users/altush/Projects/ds_common
+  ds_ads: #^0.7.0
+    path: /Users/altush/Projects/ds_ads
+
+  adapty_flutter: ^2.9.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: pro.altush.ds_purchase
+        pluginClass: DsPurchasePlugin
+      ios:
+        pluginClass: DsPurchasePlugin
