@@ -28,7 +28,7 @@ class DSPurchaseManager extends ChangeNotifier {
   /// [locale] current locale
   /// [paywallPlacementTranslator] allows to change DSPaywallType to Adapty paywall id
   DSPurchaseManager({
-    required DSPaywallPlacement initPaywall,
+    required Set<DSPaywallPlacement> initPaywalls,
     required Locale locale,
     DSPaywallPlacementTranslator? paywallPlacementTranslator,
     VoidCallback? oneSignalChanged,
@@ -38,7 +38,8 @@ class DSPurchaseManager extends ChangeNotifier {
     _paywallPlacementTranslator = paywallPlacementTranslator;
     _oneSignalChanged = oneSignalChanged;
 
-    _paywallId = getPlacementId(initPaywall);
+    _paywallId = '';
+    _initPaywalls = initPaywalls;
 
     _instance ??= this;
   }
@@ -51,6 +52,9 @@ class DSPurchaseManager extends ChangeNotifier {
   var _isInitialized = false;
   bool get isInitialized => _isInitialized;
 
+  final Map<String, List<AdaptyPaywallProduct>> _adaptyProductsCache = {};
+  final Map<String, AdaptyPaywall> _paywallsCache = {};
+
   var _isPremium = false;
   bool? _isDebugPremium;
 
@@ -58,7 +62,8 @@ class DSPurchaseManager extends ChangeNotifier {
 
   var _paywallId = '';
   DSPaywallPlacementTranslator? _paywallPlacementTranslator;
-
+  late final Set<DSPaywallPlacement> _initPaywalls;
+  
   AdaptyPaywall? _paywall;
   List<AdaptyPaywallProduct>? _products;
 
@@ -140,7 +145,12 @@ class DSPurchaseManager extends ChangeNotifier {
           }
 
           await Future.wait(<Future>[
-            _updatePaywall(),
+            () async {
+              for (final pw in _initPaywalls) {
+                _paywallId = getPlacementId(pw);
+                _updatePaywall();
+              }
+            } (),
             updatePurchases(),
           ]);
 
@@ -225,8 +235,11 @@ class DSPurchaseManager extends ChangeNotifier {
         return;
       }
       final paywall = await Adapty().getPaywall(placementId: _paywallId, locale: _locale.languageCode);
-      _products = await Adapty().getPaywallProducts(paywall: paywall);
+      final products = await Adapty().getPaywallProducts(paywall: paywall);
       _paywall = paywall;
+      _products = products;
+      _paywallsCache[_paywallId] = paywall;
+      _adaptyProductsCache[_paywallId] = products;
       _stateSubject.add(paywall);
     } catch (e, stack) {
       Fimber.e('adapty $e', stacktrace: stack);
@@ -251,13 +264,20 @@ class DSPurchaseManager extends ChangeNotifier {
   /// NB! You must call this method on every language change event
   void languageChanged(Locale locale) {
     _locale = locale;
+    _paywallsCache.clear();
     unawaited(_updatePaywall());
   }
 
   Future<void> changePaywall(final DSPaywallPlacement paywallType) async {
     final id = getPlacementId(paywallType);
-    if (id == _paywallId) return;
+    if (id == _paywallId && paywall != null) return;
     _paywallId = id;
+    if (_paywallsCache[id] != null) {
+      _paywall = _paywallsCache[id];
+      _products = _adaptyProductsCache[id];
+      return;
+    }
+
     await _updatePaywall();
   }
 
