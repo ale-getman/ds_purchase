@@ -61,7 +61,7 @@ mixin DSPaywallMixin<T extends StatefulWidget> on State<T>, WidgetsBindingObserv
   }
 
   Future<bool> buy({
-  required AdaptyPaywallProduct product,
+    required AdaptyPaywallProduct product,
     required int buttonIdx,
     required Map<String, Object> attributes,
   }) async {
