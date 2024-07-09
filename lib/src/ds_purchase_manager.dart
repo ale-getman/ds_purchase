@@ -16,6 +16,8 @@ import 'package:flutter/widgets.dart';
 
 part 'ds_prefs_part.dart';
 
+typedef LocaleCallback = Locale Function();
+
 class DSPurchaseManager extends ChangeNotifier {
   static DSPurchaseManager? _instance;
 
@@ -25,16 +27,15 @@ class DSPurchaseManager extends ChangeNotifier {
   }
 
   /// [initPaywall] define what paywall should be preloaded on start
-  /// [locale] current locale
+  /// [locale] current locale - replaced to [localeCallback]
   /// [paywallPlacementTranslator] allows to change DSPaywallType to Adapty paywall id
   DSPurchaseManager({
     required Set<DSPaywallPlacement> initPaywalls,
-    required Locale locale,
+    required this.localeCallback,
     DSPaywallPlacementTranslator? paywallPlacementTranslator,
     VoidCallback? oneSignalChanged,
   }) {
     assert(_instance == null);
-    _locale = locale;
     _paywallPlacementTranslator = paywallPlacementTranslator;
     _oneSignalChanged = oneSignalChanged;
 
@@ -81,7 +82,7 @@ class DSPurchaseManager extends ChangeNotifier {
   Map<String, dynamic> get oneSignalTags => Map.from(_oneSignalTags);
   VoidCallback? _oneSignalChanged;
 
-  var _locale = const Locale('en');
+  final LocaleCallback localeCallback;
 
   final _stateSubject = StreamController<Object?>.broadcast();
   Stream<Object?> get state => _stateSubject.stream;
@@ -225,6 +226,7 @@ class DSPurchaseManager extends ChangeNotifier {
   Future<void> _updatePaywall() async {
     if (isPremium) return;
 
+    final lang = localeCallback().languageCode;
     try {
       if (_paywallId.isEmpty) {
         logDebug('Empty paywall id');
@@ -234,7 +236,7 @@ class DSPurchaseManager extends ChangeNotifier {
         notifyListeners();
         return;
       }
-      final paywall = await Adapty().getPaywall(placementId: _paywallId, locale: _locale.languageCode);
+      final paywall = await Adapty().getPaywall(placementId: _paywallId, locale: lang);
       final products = await Adapty().getPaywallProducts(paywall: paywall);
       _paywall = paywall;
       _products = products;
@@ -248,7 +250,7 @@ class DSPurchaseManager extends ChangeNotifier {
       _stateSubject.add(e);
     }
     DSMetrica.reportEvent('Paywall: paywall data updated', attributes: {
-      'language': _locale.languageCode,
+      'language': lang,
       'paywall_id': _paywallId,
       'paywall_type': paywallType,
       'paywall_pages': '${(_paywall?.remoteConfig?['pages'] as List?)?.length}',
@@ -259,13 +261,6 @@ class DSPurchaseManager extends ChangeNotifier {
       'paywall_builder': '${paywall?.hasViewConfiguration}',
     });
     notifyListeners();
-  }
-
-  /// NB! You must call this method on every language change event
-  void languageChanged(Locale locale) {
-    _locale = locale;
-    _paywallsCache.clear();
-    unawaited(_updatePaywall());
   }
 
   Future<void> changePaywall(final DSPaywallPlacement paywallType) async {
