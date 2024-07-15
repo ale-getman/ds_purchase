@@ -7,6 +7,9 @@ import 'package:ds_common/core/ds_constants.dart';
 import 'package:ds_common/core/ds_logging.dart';
 import 'package:ds_common/core/ds_metrica.dart';
 import 'package:ds_purchase/src/ds_purchase_types.dart';
+import 'package:ds_purchase/src/entities/adapty_entities_ext.dart';
+import 'package:ds_purchase/src/entities/ds_paywall_entity.dart';
+import 'package:ds_purchase/src/entities/ds_product_entity.dart';
 import 'package:fimber/fimber.dart';
 import 'package:ds_common/core/ds_prefs.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
@@ -47,11 +50,13 @@ class DSPurchaseManager extends ChangeNotifier {
 
   final _platform = const MethodChannel('ds_purchase');
 
+  final _inititalizationCompleter = Completer();
+  Future<void> get inititalizationProcess => _inititalizationCompleter.future;
+
   var _isInitializing = false;
   bool get isInitializing => _isInitializing && !isInitialized;
 
-  var _isInitialized = false;
-  bool get isInitialized => _isInitialized;
+  bool get isInitialized => _inititalizationCompleter.isCompleted;
 
   final Map<String, List<AdaptyPaywallProduct>> _adaptyProductsCache = {};
   final Map<String, AdaptyPaywall> _paywallsCache = {};
@@ -64,7 +69,7 @@ class DSPurchaseManager extends ChangeNotifier {
   var _paywallId = '';
   DSPaywallPlacementTranslator? _paywallPlacementTranslator;
   late final Set<DSPaywallPlacement> _initPaywalls;
-  
+
   AdaptyPaywall? _paywall;
   List<AdaptyPaywallProduct>? _products;
 
@@ -181,7 +186,7 @@ class DSPurchaseManager extends ChangeNotifier {
           Fimber.e('adapty $e', stacktrace: stack);
         }
       } finally {
-        _isInitialized = true;
+        _inititalizationCompleter.complete();
       }
     } ());
   }
@@ -276,6 +281,22 @@ class DSPurchaseManager extends ChangeNotifier {
     await _updatePaywall();
   }
 
+  Future<DSPaywallEntity> changeAndGetPaywall(DSPaywallPlacement placementId) async {
+    try {
+      await changePaywall(placementId);
+
+      return DSPaywallEntity(
+        placementId: placementId.val,
+        name: paywall!.name,
+        remoteConfig: paywall?.remoteConfig,
+        products: products!.map((p) => p.toAppProduct()).toList(),
+      );
+    } catch (e, trace) {
+      Fimber.e('$e', stacktrace: trace);
+      rethrow;
+    }
+  }
+
   Future<void> reloadPaywall() async {
     await _updatePaywall();
   }
@@ -321,6 +342,12 @@ class DSPurchaseManager extends ChangeNotifier {
       DSAdsAppOpen.lockShowFor(const Duration(seconds: 5));
     }
     return _isPremium;
+  }
+
+  Future<bool> buyByWithDSProduct({required DSProductEntity dsProduct}) async {
+    final adaptyProduct = _products?.firstWhere((adaptyPr) => adaptyPr.vendorProductId == dsProduct.id);
+
+    return adaptyProduct == null ? false : await buy(product: adaptyProduct);
   }
 
   Future<void> _setPremium(bool value) async {
@@ -390,5 +417,4 @@ class DSPurchaseManager extends ChangeNotifier {
     text = text.replaceAll('{subscription_period}', '${product.subscriptionDetails?.localizedSubscriptionPeriod}');
     return text;
   }
-
 }
