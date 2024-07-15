@@ -1,3 +1,6 @@
+## 0.0.4
+- add ds paywall and product entities, get DSPaywall and buy with DSProduct
+
 ## 0.0.3
 - BREAKING CHANGE: fix locale initialization
 
