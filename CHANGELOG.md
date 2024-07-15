@@ -1,3 +1,6 @@
+## 0.0.5
+- ds_ads dependency updated
+
 ## 0.0.4
 - add ds paywall and product entities, get DSPaywall and buy with DSProduct
 
