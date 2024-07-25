@@ -1,3 +1,6 @@
+## 0.0.7
+- fix toAppProduct() and toAppPeriod() methods visibility
+
 ## 0.0.6
 - enhance Adapty attribution (add different sources)
 - add rcKey for purchases type (deprecated)
