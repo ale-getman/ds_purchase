@@ -6,6 +6,7 @@ typedef DSPaywallPlacementTranslator = String Function(DSPaywallPlacement paywal
 class DSPaywallPlacement {
   final String val;
   /// key for matching this paywall with remote config
+  @Deprecated('Better way currently is use in-app map to define relations')
   final String? rcKey;
 
   const DSPaywallPlacement(this.val, {this.rcKey});
