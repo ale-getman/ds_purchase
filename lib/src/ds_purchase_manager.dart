@@ -95,6 +95,8 @@ class DSPurchaseManager extends ChangeNotifier {
   /// Init [DSPurchaseManager]
   /// NB! You must setup app behaviour before call this method. Read https://docs.adapty.io/docs/flutter-configuring
   Future<void> init() async {
+    assert(DSMetrica.userIdType != DSMetricaUserIdType.none, 'Define non-none userIdType in DSMetrica.init');
+
     if (_isInitializing) {
       const str = 'Twice initialization of DSPurchaseManager prohibited';
       assert(false, str);
@@ -103,62 +105,32 @@ class DSPurchaseManager extends ChangeNotifier {
     }
 
     _isInitializing = true;
-    _isPremium = DSPrefs.I._isPremiumTemp();
+    try {
+      _isPremium = DSPrefs.I._isPremiumTemp();
 
-    unawaited(() async {
-      await DSConstants.I.waitForInit();
-      if (DSPrefs.I._isDebugPurchased()) {
-        _isDebugPremium = true;
-      }
-    }());
-
-    final startTime = DateTime.timestamp();
-    unawaited(() async {
-      try {
-        // https://docs.adapty.io/docs/flutter-configuring
-        try {
-          if (kDebugMode || DSConstants.I.isInternalVersionOpt) {
-            await Adapty().setLogLevel(AdaptyLogLevel.verbose);
-          }
-
-          // Previously this call could stack for a long time. Need to recollect stat
-          Adapty().activate();
-        } catch (e, stack) {
-          _stateSubject.add(e);
-          Fimber.e('adapty $e', stacktrace: stack);
-          return;
+      unawaited(() async {
+        await DSConstants.I.waitForInit();
+        if (DSPrefs.I._isDebugPurchased()) {
+          _isDebugPremium = true;
         }
+      }());
 
-        DSAdjust.registerAttributionCallback(_setAdjustAttribution);
-
+      final startTime = DateTime.timestamp();
+      unawaited(() async {
         try {
-          // https://docs.adapty.io/docs/firebase-and-google-analytics#sdk-configuration
-          final builder = AdaptyProfileParametersBuilder()
-            ..setFirebaseAppInstanceId(
-              await FirebaseAnalytics.instance.appInstanceId,
-            );
+          // https://docs.adapty.io/docs/flutter-configuring
           try {
-            final result = await _platform.invokeMethod<String?>('getFbGUID');
-            if (result != null) builder.setFacebookAnonymousId(result);
-          } catch (e, stack) {
-            Fimber.e('$e', stacktrace: stack);
-          }
+            if (kDebugMode || DSConstants.I.isInternalVersionOpt) {
+              await Adapty().setLogLevel(AdaptyLogLevel.verbose);
+            }
 
-          try {
-            await Adapty().updateProfile(builder.build());
+            // Previously this call could stack for a long time. Need to recollect stat
+            Adapty().activate();
           } catch (e, stack) {
+            _stateSubject.add(e);
             Fimber.e('adapty $e', stacktrace: stack);
+            return;
           }
-
-          await Future.wait(<Future>[
-            () async {
-              for (final pw in _initPaywalls) {
-                _paywallId = getPlacementId(pw);
-                _updatePaywall();
-              }
-            } (),
-            updatePurchases(),
-          ]);
 
           final time = DateTime.timestamp().difference(startTime);
           DSMetrica.reportEvent('Adapty initialized', attributes: {
@@ -166,6 +138,8 @@ class DSPurchaseManager extends ChangeNotifier {
             'time_delta_ms': time.inMilliseconds,
             'time_delta_sec': time.inSeconds,
           });
+
+          DSAdjust.registerAttributionCallback(_setAdjustAttribution);
 
           Adapty().didUpdateProfileStream.listen((profile) {
             DSMetrica.reportEvent('Purchase changed', attributes: {
@@ -182,13 +156,95 @@ class DSPurchaseManager extends ChangeNotifier {
               _setPremium(false);
             }
           });
-        } catch (e, stack) {
-          Fimber.e('adapty $e', stacktrace: stack);
+
+          updateProfile(String name, Future<AdaptyProfileParametersBuilder?> Function() builderCallback) {
+            unawaited(() async {
+              final startTime2 = DateTime.timestamp();
+              try {
+                final builder = await builderCallback();
+                if (builder == null) {
+                  DSMetrica.reportEvent('Adapty profile setup $name', attributes: {
+                    'time_delta_ms': -1,
+                    'time_delta_sec': -1,
+                  });
+                  return;
+                }
+                await Adapty().updateProfile(builder.build());
+              } catch (e, stack) {
+                Fimber.e('adapty $name $e', stacktrace: stack);
+                return;
+              }
+              final time2 = DateTime.timestamp().difference(startTime2);
+              DSMetrica.reportEvent('Adapty profile setup $name', attributes: {
+                'time_delta_ms': time2.inMilliseconds,
+                'time_delta_sec': time2.inSeconds,
+              });
+            } ());
+          }
+
+          updateProfile('firebase', () async {
+            // https://docs.adapty.io/docs/firebase-and-google-analytics#sdk-configuration
+            final builder = AdaptyProfileParametersBuilder()
+              ..setFirebaseAppInstanceId(
+                await FirebaseAnalytics.instance.appInstanceId,
+              );
+            return builder;
+          });
+
+          updateProfile('facebook', () async {
+            final result = await _platform.invokeMethod<String?>('getFbGUID');
+            if (result == null) return null;
+            final builder = AdaptyProfileParametersBuilder();
+            builder.setFacebookAnonymousId(result);
+            return builder;
+          });
+
+          updateProfile('metrica_user_id', () async {
+            for (var i = 0; i < 25; i++) {
+              if (DSMetrica.userProfileID() != null) break;
+              await Future.delayed(const Duration(milliseconds: 200));
+            }
+            final id = DSMetrica.userProfileID();
+            if (id == null) return null;
+            Adapty().identify(id);
+            final builder = AdaptyProfileParametersBuilder();
+            builder.setAppmetricaProfileId(id);
+            if (DSMetrica.yandexId.isEmpty) {
+              Fimber.e('metrica_user_id initialized incorrectly - yandexId was not ready', stacktrace: StackTrace.current);
+            }
+            builder.setAppmetricaDeviceId(DSMetrica.yandexId);
+            return builder;
+          });
+
+          updateProfile('adjust', () async {
+            final id = await DSAdjust.getAdid();
+            if (id == null) return null;
+            final builder = AdaptyProfileParametersBuilder();
+            builder.setCustomStringAttribute(id, 'adjustId');
+            return builder;
+          });
+
+          try {
+            await Future.wait(<Future>[
+                  () async {
+                for (final pw in _initPaywalls) {
+                  _paywallId = getPlacementId(pw);
+                  _updatePaywall();
+                }
+              }(),
+              updatePurchases(),
+            ]);
+
+          } catch (e, stack) {
+            Fimber.e('adapty $e', stacktrace: stack);
+          }
+        } finally {
+          _inititalizationCompleter.complete();
         }
-      } finally {
-        _inititalizationCompleter.complete();
-      }
-    } ());
+      }());
+    } finally {
+      _isInitializing = false;
+    }
   }
 
   String getPlacementId(DSPaywallPlacement paywallPlacement) {
