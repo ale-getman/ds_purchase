@@ -1,3 +1,7 @@
+## 0.0.6
+- enhance Adapty attribution (add different sources)
+- add rcKey for purchases type (deprecated)
+
 ## 0.0.5
 - ds_ads dependency updated
 
