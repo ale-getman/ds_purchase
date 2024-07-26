@@ -1,3 +1,6 @@
+## 0.0.8
+- iOS: fix Adapty profile setup facebook error ("No implementation found for method getFbGUID on channel ds_purchase")
+
 ## 0.0.7
 - fix toAppProduct() and toAppPeriod() methods visibility
 

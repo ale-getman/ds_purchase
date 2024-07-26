@@ -37,10 +37,10 @@ packages:
     dependency: transitive
     description:
       name: appmetrica_plugin
-      sha256: "0357330d701a7b61c7b0aabccbe9abe799539d927ad82ad4b6708beb27f7c500"
+      sha256: ed51082802c362c71249c65878676c8b98fa3ead8f7d0931789b7e52d55afa1d
       url: "https://pub.dev"
     source: hosted
-    version: "2.1.1"
+    version: "1.4.0"
   async:
     dependency: transitive
     description:
@@ -133,17 +133,17 @@ packages:
     dependency: transitive
     description:
       name: ds_common
-      sha256: "3d49ccbc9be4d369f2a23f5c9b7d5523d79a72af2ebe28c3773e94eddc900db8"
+      sha256: "252d37f3e0aee755e1b527f769e3115fabb640752c5b8c12a4458f6de7895274"
       url: "https://pub.dev"
     source: hosted
-    version: "0.1.25"
+    version: "0.1.29"
   ds_purchase:
     dependency: "direct main"
     description:
       path: ".."
       relative: true
     source: path
-    version: "0.0.5"
+    version: "0.0.8"
   fake_async:
     dependency: transitive
     description:
