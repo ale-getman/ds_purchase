@@ -1,3 +1,4 @@
+import FBSDKCoreKit
 import Flutter
 import UIKit
 
@@ -10,8 +11,8 @@ public class DsPurchasePlugin: NSObject, FlutterPlugin {
 
   public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
     switch call.method {
-    case "getPlatformVersion":
-      result("iOS " + UIDevice.current.systemVersion)
+      case "getFbGUID":
+        result(AppEvents.shared.anonymousID as String?)
     default:
       result(FlutterMethodNotImplemented)
     }
