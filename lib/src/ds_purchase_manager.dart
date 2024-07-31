@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:adapty_flutter/adapty_flutter.dart';
-import 'package:collection/collection.dart';
 import 'package:ds_ads/ds_ads.dart';
 import 'package:ds_common/core/ds_adjust.dart';
 import 'package:ds_common/core/ds_constants.dart';
