@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:adapty_flutter/adapty_flutter.dart';
+import 'package:collection/collection.dart';
 import 'package:ds_ads/ds_ads.dart';
 import 'package:ds_common/core/ds_adjust.dart';
 import 'package:ds_common/core/ds_constants.dart';
@@ -393,6 +394,15 @@ class DSPurchaseManager extends ChangeNotifier {
     try {
       final profile = await Adapty().makePurchase(product: product);
       await _updatePurchasesInternal(profile);
+      if (isPremium) {
+        DSMetrica.reportEvent('paywall_complete_buy', fbSend: true, attributes: {
+          'paywall_id': paywallId,
+          'paywall_type': paywallType,
+          'vendor_product': product.vendorProductId,
+          'vendor_offer_id': product.subscriptionDetails?.androidOfferId ?? 'null',
+          'is_premium': isPremium,
+        });
+      }
     } finally {
       DSAdsAppOpen.unlockUntilAppResume();
       DSAdsAppOpen.lockShowFor(const Duration(seconds: 5));

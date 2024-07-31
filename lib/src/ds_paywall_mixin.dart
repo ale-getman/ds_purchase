@@ -83,15 +83,6 @@ mixin DSPaywallMixin<T extends StatefulWidget> on State<T>, WidgetsBindingObserv
       _lastStatAction = 'click to subscribe';
       final res = await pm.buy(product: product);
       if (res) {
-        DSMetrica.reportEvent('paywall_complete_buy', fbSend: true, attributes: {
-          'paywall_id': pm.paywallId,
-          'paywall_type': pm.paywallType,
-          'vendor_product': product.vendorProductId,
-          'vendor_offer_id': product.subscriptionDetails?.androidOfferId ?? 'null',
-          'product_index': buttonIdx,
-          'is_premium': pm.isPremium,
-          ...attributes,
-        });
         _lastStatTime = DateTime.timestamp();
         _lastStatAction = 'subscribed';
         await closeCallback();
