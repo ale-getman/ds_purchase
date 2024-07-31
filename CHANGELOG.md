@@ -1,3 +1,8 @@
+## 0.0.9
+- fix Adapty profile setup
+- paywall_complete_buy event moved to manager call (breaking change: product_index attribute removed)
+- update ds_common dependency
+
 ## 0.0.8
 - iOS: fix Adapty profile setup facebook error ("No implementation found for method getFbGUID on channel ds_purchase")
 
