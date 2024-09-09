@@ -1,3 +1,7 @@
+## 0.0.10
+- add localized price to product and replace tags func
+- fix OneSignal isPremium tag
+
 ## 0.0.9
 - fix Adapty profile setup
 - paywall_complete_buy event moved to manager call (breaking change: product_index attribute removed)
