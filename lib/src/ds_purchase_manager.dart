@@ -53,6 +53,9 @@ class DSPurchaseManager extends ChangeNotifier {
   final _inititalizationCompleter = Completer();
   Future<void> get inititalizationProcess => _inititalizationCompleter.future;
 
+  @protected
+  static bool get hasInstance => _instance != null;
+
   var _isInitializing = false;
   bool get isInitializing => _isInitializing && !isInitialized;
 
@@ -113,6 +116,9 @@ class DSPurchaseManager extends ChangeNotifier {
         if (DSPrefs.I._isDebugPurchased()) {
           _isDebugPremium = true;
         }
+        // Update OneSignal isPremium status after initialization because actual status of this flag is very important
+        _oneSignalTags['isPremium'] = isPremium;
+        _oneSignalChanged?.call();
       }());
 
       final startTime = DateTime.timestamp();
