@@ -1,3 +1,6 @@
+## 0.0.11
+- update ds_common for Adapty v. 5 support
+
 ## 0.0.10
 - add localized price to product and replace tags func
 - fix OneSignal isPremium tag
