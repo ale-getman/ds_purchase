@@ -270,18 +270,16 @@ class DSPurchaseManager extends ChangeNotifier {
   }
 
   static void _setAdjustAttribution(DSAdjustAttribution data) {
+    // ToDo: need to validate next code by
     //  https://docs.adapty.io/docs/adjust#sdk-configuration
     var attribution = <String, String>{};
     if (data.trackerToken != null) attribution['trackerToken'] = data.trackerToken!;
     if (data.trackerName != null) attribution['trackerName'] = data.trackerName!;
     if (data.network != null) attribution['network'] = data.network!;
+    if (data.campaign != null) attribution['campaign'] = data.campaign!;
     if (data.adgroup != null) attribution['adgroup'] = data.adgroup!;
     if (data.creative != null) attribution['creative'] = data.creative!;
     if (data.clickLabel != null) attribution['clickLabel'] = data.clickLabel!;
-    // adid removed by adjust after update v4 to v5
-    // commit - https://github.com/adjust/flutter_sdk/commit/6ae7661ae4902d4b96400e1603ce43ebb97602ae
-    // file - lib/adjust_attribution.dart
-    // if (data.adid != null) attribution['adid'] = data.adid!;
     if (data.costType != null) attribution['costType'] = data.costType!;
     if (data.costAmount != null) attribution['costAmount'] = data.costAmount!.toString();
     if (data.costCurrency != null) attribution['costCurrency'] = data.costCurrency!;
