@@ -278,10 +278,6 @@ class DSPurchaseManager extends ChangeNotifier {
     if (data.adgroup != null) attribution['adgroup'] = data.adgroup!;
     if (data.creative != null) attribution['creative'] = data.creative!;
     if (data.clickLabel != null) attribution['clickLabel'] = data.clickLabel!;
-    // adid removed by adjust after update v4 to v5
-    // commit - https://github.com/adjust/flutter_sdk/commit/6ae7661ae4902d4b96400e1603ce43ebb97602ae
-    // file - lib/adjust_attribution.dart
-    // if (data.adid != null) attribution['adid'] = data.adid!;
     if (data.costType != null) attribution['costType'] = data.costType!;
     if (data.costAmount != null) attribution['costAmount'] = data.costAmount!.toString();
     if (data.costCurrency != null) attribution['costCurrency'] = data.costCurrency!;
