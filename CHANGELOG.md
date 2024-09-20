@@ -1,3 +1,6 @@
+## 0.0.12
+- increase AppMetrica and Adjust profile update timeouts for Adapty
+
 ## 0.0.11
 - update ds_common for Adapty v. 5 support
 
