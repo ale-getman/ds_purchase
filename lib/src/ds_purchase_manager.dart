@@ -225,6 +225,8 @@ class DSPurchaseManager extends ChangeNotifier {
           updateProfile('adjust', () async {
             String? id;
             for (var i = 0; i < 50; i++) {
+              // ignore for compatibility with ds_common 0.1.35 and lower
+              // ignore: await_only_futures
               id = await DSAdjust.getAdid();
               if (id != null) break;
               await Future.delayed(const Duration(milliseconds: 200));
