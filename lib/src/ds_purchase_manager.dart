@@ -206,7 +206,7 @@ class DSPurchaseManager extends ChangeNotifier {
           });
 
           updateProfile('metrica_user_id', () async {
-            for (var i = 0; i < 25; i++) {
+            for (var i = 0; i < 300; i++) {
               if (DSMetrica.userProfileID() != null && DSMetrica.yandexId.isNotEmpty) break;
               await Future.delayed(const Duration(milliseconds: 200));
             }
@@ -224,7 +224,7 @@ class DSPurchaseManager extends ChangeNotifier {
 
           updateProfile('adjust', () async {
             String? id;
-            for (var i = 0; i < 25; i++) {
+            for (var i = 0; i < 50; i++) {
               id = await DSAdjust.getAdid();
               if (id != null) break;
               await Future.delayed(const Duration(milliseconds: 200));
