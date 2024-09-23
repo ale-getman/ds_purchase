@@ -6,6 +6,7 @@ import 'package:ds_common/core/ds_adjust.dart';
 import 'package:ds_common/core/ds_constants.dart';
 import 'package:ds_common/core/ds_logging.dart';
 import 'package:ds_common/core/ds_metrica.dart';
+import 'package:ds_common/core/ds_referrer.dart';
 import 'package:ds_purchase/src/ds_purchase_types.dart';
 import 'package:ds_purchase/src/entities/adapty_entities_ext.dart';
 import 'package:ds_purchase/src/entities/ds_paywall_entity.dart';
@@ -101,6 +102,7 @@ class DSPurchaseManager extends ChangeNotifier {
   /// NB! You must setup app behaviour before call this method. Read https://docs.adapty.io/docs/flutter-configuring
   Future<void> init() async {
     assert(DSMetrica.userIdType != DSMetricaUserIdType.none, 'Define non-none userIdType in DSMetrica.init');
+    assert(DSReferrer.isInitialized, 'Call DSReferrer.I.trySave() before');
 
     if (_isInitializing) {
       const str = 'Twice initialization of DSPurchaseManager prohibited';
@@ -148,6 +150,18 @@ class DSPurchaseManager extends ChangeNotifier {
           });
 
           DSAdjust.registerAttributionCallback(_setAdjustAttribution);
+
+          DSReferrer.I.registerChangedCallback((fields) async {
+            // https://app.asana.com/0/1208203354836323/1208203354836334/f
+            if ((fields['utm_source'] ?? '').isNotEmpty) {
+              var trackAttr = '${fields['utm_source'] ?? ''}&${fields['utm_content'] ?? ''}';
+              if (trackAttr.length > 49) trackAttr = trackAttr.substring(0, 49);
+              logDebug('tracker_clickid=$trackAttr', stackDeep: 2);
+              final builder = AdaptyProfileParametersBuilder();
+              builder.setCustomStringAttribute(trackAttr, 'tracker_clickid');
+              await Adapty().updateProfile(builder.build());
+            }
+          });
 
           Adapty().didUpdateProfileStream.listen((profile) {
             DSMetrica.reportEvent('Purchase changed', attributes: {
@@ -254,7 +268,7 @@ class DSPurchaseManager extends ChangeNotifier {
             Fimber.e('adapty $e', stacktrace: stack);
           }
         } finally {
-          _inititalizationCompleter.complete();
+          _initializationCompleter.complete();
         }
       }());
     } finally {
