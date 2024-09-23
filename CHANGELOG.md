@@ -1,3 +1,6 @@
+## 0.0.13
+- send tracker_clickid attrtibute to Adapty
+
 ## 0.0.12
 - increase AppMetrica and Adjust profile update timeouts for Adapty
 
