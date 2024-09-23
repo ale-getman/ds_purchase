@@ -50,8 +50,10 @@ class DSPurchaseManager extends ChangeNotifier {
 
   final _platform = const MethodChannel('ds_purchase');
 
-  final _inititalizationCompleter = Completer();
-  Future<void> get inititalizationProcess => _inititalizationCompleter.future;
+  final _initializationCompleter = Completer();
+  @Deprecated('Use initializationProcess property instead')
+  Future<void> get inititalizationProcess => _initializationCompleter.future;
+  Future<void> get initializationProcess => _initializationCompleter.future;
 
   @protected
   static bool get hasInstance => _instance != null;
@@ -59,7 +61,7 @@ class DSPurchaseManager extends ChangeNotifier {
   var _isInitializing = false;
   bool get isInitializing => _isInitializing && !isInitialized;
 
-  bool get isInitialized => _inititalizationCompleter.isCompleted;
+  bool get isInitialized => _initializationCompleter.isCompleted;
 
   final Map<String, List<AdaptyPaywallProduct>> _adaptyProductsCache = {};
   final Map<String, AdaptyPaywall> _paywallsCache = {};
