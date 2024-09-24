@@ -1,6 +1,6 @@
 name: ds_purchase
 description: "Purchase SectDev components for Flutter projects (https://sect.dev/). Currently supports Adapty only"
-version: 0.0.13
+version: 0.0.14
 homepage: https://github.com/al-tush/ds_purchase
 
 environment:
@@ -13,7 +13,7 @@ dependencies:
 
   fimber: ^0.7.0
   firebase_analytics: '>=10.10.0 <12.0.0'
-  ds_common: ^0.1.37
+  ds_common: ^0.1.39
   ds_ads: '>=0.7.0 <0.9.0'
 
   adapty_flutter: ^2.9.3

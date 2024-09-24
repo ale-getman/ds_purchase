@@ -1,3 +1,6 @@
+## 0.0.14
+- add is_premium DSMetrica attribute to every event in application
+
 ## 0.0.13
 - send tracker_clickid attrtibute to Adapty
 
