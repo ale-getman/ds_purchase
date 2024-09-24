@@ -115,6 +115,10 @@ class DSPurchaseManager extends ChangeNotifier {
     try {
       _isPremium = DSPrefs.I._isPremiumTemp();
 
+      DSMetrica.registerAttrsHandler(() => {
+        'is_premium': isPremium,
+      });
+
       unawaited(() async {
         await DSConstants.I.waitForInit();
         if (DSPrefs.I._isDebugPurchased()) {
@@ -144,7 +148,6 @@ class DSPurchaseManager extends ChangeNotifier {
 
           final time = DateTime.timestamp().difference(startTime);
           DSMetrica.reportEvent('Adapty initialized', attributes: {
-            'is_premium': isPremium,
             'time_delta_ms': time.inMilliseconds,
             'time_delta_sec': time.inSeconds,
           });
@@ -429,7 +432,6 @@ class DSPurchaseManager extends ChangeNotifier {
           'paywall_type': paywallType,
           'vendor_product': product.vendorProductId,
           'vendor_offer_id': product.subscriptionDetails?.androidOfferId ?? 'null',
-          'is_premium': isPremium,
         });
       }
     } finally {
@@ -466,9 +468,7 @@ class DSPurchaseManager extends ChangeNotifier {
   }
 
   Future<void> restorePurchases() async {
-    DSMetrica.reportEvent('Paywall: before restore purchases', attributes: {
-      'is_premium': isPremium,
-    });
+    DSMetrica.reportEvent('Paywall: before restore purchases');
     final profile = await Adapty().restorePurchases();
     await _updatePurchasesInternal(profile);
   }
