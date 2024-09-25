@@ -4,7 +4,7 @@
 #
 Pod::Spec.new do |s|
   s.name             = 'ds_purchase'
-  s.version          = '0.0.2'
+  s.version          = '0.0.3'
   s.summary          = 'Purchase SectDev components for Flutter projects (https://sect.dev/). Currently supports Adapty only'
   s.description      = <<-DESC
 Purchase SectDev components for Flutter projects (https://sect.dev/). Currently supports Adapty only

@@ -6,17 +6,18 @@ import 'package:ds_common/core/ds_adjust.dart';
 import 'package:ds_common/core/ds_constants.dart';
 import 'package:ds_common/core/ds_logging.dart';
 import 'package:ds_common/core/ds_metrica.dart';
+import 'package:ds_common/core/ds_prefs.dart';
 import 'package:ds_common/core/ds_referrer.dart';
 import 'package:ds_purchase/src/ds_purchase_types.dart';
 import 'package:ds_purchase/src/entities/adapty_entities_ext.dart';
 import 'package:ds_purchase/src/entities/ds_paywall_entity.dart';
 import 'package:ds_purchase/src/entities/ds_product_entity.dart';
 import 'package:fimber/fimber.dart';
-import 'package:ds_common/core/ds_prefs.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
+import 'package:meta/meta.dart' as meta;
 
 part 'ds_prefs_part.dart';
 
@@ -49,7 +50,7 @@ class DSPurchaseManager extends ChangeNotifier {
     _instance ??= this;
   }
 
-  final _platform = const MethodChannel('ds_purchase');
+  final _platformChannel = const MethodChannel('ds_purchase');
 
   final _initializationCompleter = Completer();
   @Deprecated('Use initializationProcess property instead')
@@ -217,7 +218,7 @@ class DSPurchaseManager extends ChangeNotifier {
           });
 
           updateProfile('facebook', () async {
-            final result = await _platform.invokeMethod<String?>('getFbGUID');
+            final result = await _platformChannel.invokeMethod<String?>('getFbGUID');
             if (result == null) return null;
             final builder = AdaptyProfileParametersBuilder();
             builder.setFacebookAnonymousId(result);
@@ -415,13 +416,22 @@ class DSPurchaseManager extends ChangeNotifier {
   }
 
   Future<bool> buy({required AdaptyPaywallProduct product}) async {
+    final isTrial = product.subscriptionDetails?.introductoryOffer.isNotEmpty == true;
+
     DSMetrica.reportEvent('paywall_buy', fbSend: true, attributes: {
       'vendor_product': product.vendorProductId,
       'vendor_offer_id': product.subscriptionDetails?.androidOfferId ?? 'null',
       'paywall_type': paywallType,
       'adapty_paywall': paywallVariant,
       'placement': paywallDefinedId,
+      'is_trial': isTrial,
     });
+    sendFbPurchase(
+      fbOrderId: product.vendorProductId,
+      fbCurrency: product.price.currencyCode ?? 'none',
+      valueToSum: product.price.amount,
+      isTrial: isTrial,
+    );
     DSAdsAppOpen.lockUntilAppResume();
     try {
       final profile = await Adapty().makePurchase(product: product);
@@ -432,7 +442,16 @@ class DSPurchaseManager extends ChangeNotifier {
           'paywall_type': paywallType,
           'vendor_product': product.vendorProductId,
           'vendor_offer_id': product.subscriptionDetails?.androidOfferId ?? 'null',
+          'is_trial': isTrial,
         });
+        if (!kDebugMode) {
+          unawaited(sendFbPurchase(
+            fbOrderId: product.vendorProductId,
+            fbCurrency: product.price.currencyCode ?? 'none',
+            valueToSum: product.price.amount,
+            isTrial: isTrial,
+          ));
+        }
       }
     } finally {
       DSAdsAppOpen.unlockUntilAppResume();
@@ -478,4 +497,25 @@ class DSPurchaseManager extends ChangeNotifier {
 
     return dsProduct.replaceTags(text);
   }
+
+  /// This is an internal method to allow call it in very specific cases externally (ex. debug purposes)
+  @meta.internal
+  Future<void> sendFbPurchase({
+    required String fbOrderId,
+    required String fbCurrency,
+    required double valueToSum,
+    required bool isTrial,
+  }) async {
+    try {
+      await _platformChannel.invokeMethod('sendFbPurchase', {
+        'fbOrderId': fbOrderId,
+        'fbCurrency': fbCurrency,
+        'valueToSum': valueToSum,
+        'isTrial': isTrial,
+      });
+    } on PlatformException catch (e) {
+      throw Exception('Failed to set Facebook advertiser tracking: ${e.message}.');
+    }
+  }
+
 }

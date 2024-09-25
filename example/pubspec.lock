@@ -172,24 +172,26 @@ packages:
   ds_ads:
     dependency: transitive
     description:
-      path: "/Users/altush/Projects/ds_ads"
-      relative: false
-    source: path
+      name: ds_ads
+      sha256: "735432ceda48da20065524e1cf6efc6644241e18b97ac14eda275d0169d7bb86"
+      url: "https://pub.dev"
+    source: hosted
     version: "0.8.4"
   ds_common:
     dependency: transitive
     description:
-      path: "/Users/altush/Projects/ds_common"
-      relative: false
-    source: path
-    version: "0.1.38"
+      name: ds_common
+      sha256: "7e6c70e5cad9d213bb43230fababcdb8c00f3767ee6fe5afdfcecd4f0274cf5f"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.1.39"
   ds_purchase:
     dependency: "direct main"
     description:
       path: ".."
       relative: true
     source: path
-    version: "0.0.13"
+    version: "0.0.14"
   fake_async:
     dependency: transitive
     description:
