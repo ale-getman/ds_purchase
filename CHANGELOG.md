@@ -1,8 +1,11 @@
+## 0.0.15
+- send Facebook events (`fb_mobile_purchase`, `StartTrial` and `Subscribe`) after successful subscription
+
 ## 0.0.14
 - add is_premium DSMetrica attribute to every event in application
 
 ## 0.0.13
-- send tracker_clickid attrtibute to Adapty
+- send tracker_clickid attribute to Adapty
 
 ## 0.0.12
 - increase AppMetrica and Adjust profile update timeouts for Adapty
