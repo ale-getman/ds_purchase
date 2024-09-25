@@ -426,12 +426,6 @@ class DSPurchaseManager extends ChangeNotifier {
       'placement': paywallDefinedId,
       'is_trial': isTrial,
     });
-    sendFbPurchase(
-      fbOrderId: product.vendorProductId,
-      fbCurrency: product.price.currencyCode ?? 'none',
-      valueToSum: product.price.amount,
-      isTrial: isTrial,
-    );
     DSAdsAppOpen.lockUntilAppResume();
     try {
       final profile = await Adapty().makePurchase(product: product);
