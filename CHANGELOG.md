@@ -1,3 +1,6 @@
+## 0.0.16
+- fix duplicated Facebook events (bug in 0.0.15)
+
 ## 0.0.15
 - send Facebook events (`fb_mobile_purchase`, `StartTrial` and `Subscribe`) after successful subscription
 
