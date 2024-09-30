@@ -1,3 +1,6 @@
+## 1.0.0
+- update dependencies
+
 ## 0.0.16
 - fix duplicated Facebook events (bug in 0.0.15)
 
