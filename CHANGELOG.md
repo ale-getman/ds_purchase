@@ -1,3 +1,6 @@
+## 1.0.2
+- fix namespace
+
 ## 1.0.1
 - fix Flutter 3.24 release build
 
