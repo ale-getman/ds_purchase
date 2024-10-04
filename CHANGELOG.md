@@ -1,3 +1,7 @@
+## 1.0.3
+- fix Adapty initialization
+- minimum Flutter version is 3.24
+
 ## 1.0.2
 - fix namespace
 
