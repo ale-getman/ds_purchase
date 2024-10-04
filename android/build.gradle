@@ -25,7 +25,9 @@ apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
 
 android {
-    namespace = "pro.altush.ds_purchase"
+    if (project.android.hasProperty("namespace")) {
+        namespace "pro.altush.ds_purchase"
+    }
     compileSdk 34
 
     compileOptions {
@@ -44,8 +46,9 @@ android {
 
     defaultConfig {
         minSdkVersion 21
+        consumerProguardFiles 'proguard-rules.pro'
     }
-
+   
     dependencies {
         implementation 'com.facebook.android:facebook-android-sdk:15.1.0'
 
