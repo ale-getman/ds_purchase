@@ -1,3 +1,7 @@
+## 1.0.4
+- fix adjust attribution for Adjust 5.0
+- update ds-libs dependencies
+
 ## 1.0.3
 - fix Adapty initialization
 - minimum Flutter version is 3.24
