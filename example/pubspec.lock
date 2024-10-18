@@ -129,14 +129,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.18.0"
-  crypto:
-    dependency: transitive
-    description:
-      name: crypto
-      sha256: ff625774173754681d66daaf4a448684fb04b78f902da9cb3d308c19cc5e8bab
-      url: "https://pub.dev"
-    source: hosted
-    version: "3.0.3"
   cupertino_icons:
     dependency: "direct main"
     description:
@@ -157,25 +149,25 @@ packages:
     dependency: transitive
     description:
       name: ds_ads
-      sha256: a42169ed7a5b5765a706380fc3b6160765d1ab5cd8830ee7ee4d5e007913741d
+      sha256: "1405565d73e8c402e41664c23bc99d5c4d2d264a6717dee565ba1afbc13ee69e"
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.2"
+    version: "1.1.0"
   ds_common:
     dependency: transitive
     description:
       name: ds_common
-      sha256: "947dfc6ce5b56dd405fbd658bb945572246fb41052f0f1897fac1c7bf66eeba4"
+      sha256: "4b74fa476a8cb7214b028a9d2e2ad12ec102adf48de9820ef715c4cb6946c190"
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.4"
+    version: "1.0.8"
   ds_purchase:
     dependency: "direct main"
     description:
       path: ".."
       relative: true
     source: path
-    version: "1.0.2"
+    version: "1.0.3"
   fake_async:
     dependency: transitive
     description:
@@ -320,14 +312,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.6.12"
-  fixnum:
-    dependency: transitive
-    description:
-      name: fixnum
-      sha256: "25517a4deb0c03aa0f32fd12db525856438902d9c16536311e76cdc57b31d7d1"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.1.0"
   flutter:
     dependency: "direct main"
     description: flutter
@@ -558,22 +542,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.2.3"
-  sentry:
-    dependency: transitive
-    description:
-      name: sentry
-      sha256: "60756499f09c3ed944640d7993ac527a89f7c3033f13ec12ae145706b269b5c8"
-      url: "https://pub.dev"
-    source: hosted
-    version: "8.5.0"
-  sentry_flutter:
-    dependency: transitive
-    description:
-      name: sentry_flutter
-      sha256: "26cfe89cb08a60d9bc0c4e748a0508e223ae378265aec8ed2a2b48f0d2c936b9"
-      url: "https://pub.dev"
-    source: hosted
-    version: "8.5.0"
   shared_preferences:
     dependency: transitive
     description:
@@ -643,14 +611,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.10.0"
-  sprintf:
-    dependency: transitive
-    description:
-      name: sprintf
-      sha256: "1fc9ffe69d4df602376b52949af107d8f5703b77cda567c4d7d86a0693120f23"
-      url: "https://pub.dev"
-    source: hosted
-    version: "7.0.0"
   stack_trace:
     dependency: transitive
     description:
@@ -715,14 +675,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.3.0"
-  uuid:
-    dependency: transitive
-    description:
-      name: uuid
-      sha256: "83d37c7ad7aaf9aa8e275490669535c8080377cfa7a7004c24dfac53afffaa90"
-      url: "https://pub.dev"
-    source: hosted
-    version: "4.4.2"
   vector_math:
     dependency: transitive
     description:
