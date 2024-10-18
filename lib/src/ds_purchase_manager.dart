@@ -292,13 +292,17 @@ class DSPurchaseManager extends ChangeNotifier {
   }
 
   static void _setAdjustAttribution(DSAdjustAttribution data) {
-    // ToDo: need to validate next code by
     //  https://docs.adapty.io/docs/adjust#sdk-configuration
+    final adid = DSAdjust.getAdid();
+    if (adid == null) {
+      // delayed update because of getAdid() implementation
+      logDebug('Adjust setAdjustAttribution delayed');
+    }
+
     var attribution = <String, String>{};
     if (data.trackerToken != null) attribution['trackerToken'] = data.trackerToken!;
     if (data.trackerName != null) attribution['trackerName'] = data.trackerName!;
     if (data.network != null) attribution['network'] = data.network!;
-    if (data.campaign != null) attribution['campaign'] = data.campaign!;
     if (data.adgroup != null) attribution['adgroup'] = data.adgroup!;
     if (data.creative != null) attribution['creative'] = data.creative!;
     if (data.clickLabel != null) attribution['clickLabel'] = data.clickLabel!;
@@ -307,11 +311,19 @@ class DSPurchaseManager extends ChangeNotifier {
     if (data.costCurrency != null) attribution['costCurrency'] = data.costCurrency!;
     if (data.fbInstallReferrer != null) attribution['fbInstallReferrer'] = data.fbInstallReferrer!;
 
-    DSMetrica.reportEvent('adjust attribution', attributes: attribution);
+    DSMetrica.reportEvent('adjust attribution', attributes: {
+      ...attribution,
+      'extra_adid': adid ?? '',
+      'extra_campaign': data.campaign ?? '',
+    });
 
     unawaited(() async {
       try {
-        await Adapty().updateAttribution(attribution, source: AdaptyAttributionSource.adjust);
+        await Adapty().updateAttribution(
+          attribution,
+          source: AdaptyAttributionSource.adjust,
+          networkUserId: adid,
+        );
       } catch (e, stack) {
         Fimber.e('adapty $e', stacktrace: stack);
       }
