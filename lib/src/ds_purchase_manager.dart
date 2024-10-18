@@ -303,6 +303,7 @@ class DSPurchaseManager extends ChangeNotifier {
     if (data.trackerToken != null) attribution['trackerToken'] = data.trackerToken!;
     if (data.trackerName != null) attribution['trackerName'] = data.trackerName!;
     if (data.network != null) attribution['network'] = data.network!;
+    if (data.campaign != null) attribution['campaign'] = data.campaign!; // from Unity sample (not exists in Flutter documentation)
     if (data.adgroup != null) attribution['adgroup'] = data.adgroup!;
     if (data.creative != null) attribution['creative'] = data.creative!;
     if (data.clickLabel != null) attribution['clickLabel'] = data.clickLabel!;
