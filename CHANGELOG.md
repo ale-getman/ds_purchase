@@ -1,3 +1,6 @@
+## 1.0.5
+- fix adjust attribution for Adjust 5.0 for campaign
+
 ## 1.0.4
 - fix adjust attribution for Adjust 5.0
 - update ds-libs dependencies
