@@ -1,5 +1,5 @@
 name: ds_purchase
-description: "Purchase SectDev components for Flutter projects (https://sect.dev/). Currently supports Adapty only"
+description: Purchase components for altush Flutter projects. Currently supports Adapty only
 version: 1.0.5
 homepage: https://github.com/al-tush/ds_purchase
 
