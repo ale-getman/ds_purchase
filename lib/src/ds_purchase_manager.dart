@@ -283,11 +283,14 @@ class DSPurchaseManager extends ChangeNotifier {
 
           try {
             await Future.wait(<Future>[
-                  () async {
+              () async {
+                final ids = <String>{};
                 for (final pw in _initPaywalls) {
                   _paywallId = getPlacementId(pw);
+                  if (ids.contains(_paywallId)) continue;
+                  ids.add(_paywallId);
+                  Fimber.i('Paywall: preload starting for $_paywallId');
                   await _updatePaywall();
-                  Fimber.i('Paywall preloaded ${pw.val}');
                 }
               }(),
               updatePurchases(),
