@@ -262,7 +262,8 @@ class DSPurchaseManager extends ChangeNotifier {
                   () async {
                 for (final pw in _initPaywalls) {
                   _paywallId = getPlacementId(pw);
-                  _updatePaywall();
+                  await _updatePaywall();
+                  Fimber.i('Paywall preloaded ${pw.val}');
                 }
               }(),
               updatePurchases(),
