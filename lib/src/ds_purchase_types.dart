@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
-typedef DSPaywallPlacementTranslator = String Function(DSPaywallPlacement paywallType);
+typedef DSPaywallPlacementTranslator = String Function(
+    DSPaywallPlacement paywallType);
 
 @immutable
 class DSPaywallPlacement {

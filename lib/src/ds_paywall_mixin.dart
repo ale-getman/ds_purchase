@@ -6,7 +6,8 @@ import 'package:flutter/material.dart';
 
 import 'ds_purchase_manager.dart';
 
-mixin DSPaywallMixin<T extends StatefulWidget> on State<T>, WidgetsBindingObserver {
+mixin DSPaywallMixin<T extends StatefulWidget>
+    on State<T>, WidgetsBindingObserver {
   DSPurchaseManager get pm => DSPurchaseManager.I;
   AdaptyPaywall get paywall => pm.paywall!;
 
@@ -73,7 +74,8 @@ mixin DSPaywallMixin<T extends StatefulWidget> on State<T>, WidgetsBindingObserv
         'paywall_id': pm.paywallId,
         'paywall_type': pm.paywallType,
         'vendor_product': product.vendorProductId,
-        'vendor_offer_id': product.subscriptionDetails?.androidOfferId ?? 'null',
+        'vendor_offer_id':
+            product.subscriptionDetails?.androidOfferId ?? 'null',
         'product_index': buttonIdx,
         'last_action': _lastStatAction,
         'time_sec': DateTime.timestamp().difference(_lastStatTime).inSeconds,

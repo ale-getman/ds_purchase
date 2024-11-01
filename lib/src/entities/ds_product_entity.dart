@@ -34,25 +34,32 @@ class DSProductEntity {
 
     text = text.replaceAll('{price}', locPrice);
 
-    var pricePerDay =
-        (subscriptionPeriod != null ? priceValue / subscriptionPeriod!.daysInPeriod : priceValue).toStringAsFixed(1);
+    var pricePerDay = (subscriptionPeriod != null
+            ? priceValue / subscriptionPeriod!.daysInPeriod
+            : priceValue)
+        .toStringAsFixed(1);
 
     text = text.replaceAll('{price_per_day}', '$priceSymbol$pricePerDay');
 
-    final pricePerWeek =
-        (subscriptionPeriod != null ? priceValue / subscriptionPeriod!.weeksInPeriod : priceValue).toStringAsFixed(1);
+    final pricePerWeek = (subscriptionPeriod != null
+            ? priceValue / subscriptionPeriod!.weeksInPeriod
+            : priceValue)
+        .toStringAsFixed(1);
 
     text = text.replaceAll('{price_per_week}', '$priceSymbol$pricePerWeek');
 
     text = text.replaceAll('{currency}', priceSymbol);
 
-    text = text.replaceAll('{zero_price}', locPrice.replaceAll(RegExp(r'[\d,\.]+'), '0'));
+    text = text.replaceAll(
+        '{zero_price}', locPrice.replaceAll(RegExp(r'[\d,\.]+'), '0'));
 
     if (subscriptionPeriod?.daysInPeriod != null) {
-      text = text.replaceAll('{days}', subscriptionPeriod!.daysInPeriod.toString());
+      text = text.replaceAll(
+          '{days}', subscriptionPeriod!.daysInPeriod.toString());
     }
-    
-    text = text.replaceAll('{subscription_period}', '$localizedSubscriptionPeriod');
+
+    text = text.replaceAll(
+        '{subscription_period}', '$localizedSubscriptionPeriod');
 
     return text;
   }

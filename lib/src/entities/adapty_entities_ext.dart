@@ -13,7 +13,8 @@ extension AdaptyProductExt on AdaptyPaywallProduct {
       description: localizedDescription,
       androidOfferId: subscriptionDetails?.androidOfferId,
       subscriptionPeriod: subscriptionDetails?.subscriptionPeriod.toAppPeriod(),
-      localizedSubscriptionPeriod: subscriptionDetails?.localizedSubscriptionPeriod,
+      localizedSubscriptionPeriod:
+          subscriptionDetails?.localizedSubscriptionPeriod,
     );
   }
 }
