@@ -101,7 +101,7 @@ class DSPurchaseManager extends ChangeNotifier {
 
   /// Init [DSPurchaseManager]
   /// NB! You must setup app behaviour before call this method. Read https://docs.adapty.io/docs/flutter-configuring
-  Future<void> init() async {
+  Future<void> init({String? adaptyCustomUserId}) async {
     assert(DSMetrica.userIdType != DSMetricaUserIdType.none, 'Define non-none userIdType in DSMetrica.init');
     assert(DSReferrer.isInitialized, 'Call DSReferrer.I.trySave() before');
 
@@ -226,13 +226,18 @@ class DSPurchaseManager extends ChangeNotifier {
           });
 
           updateProfile('metrica_user_id', () async {
+            if (adaptyCustomUserId != null) {
+              await Adapty().identify(adaptyCustomUserId);
+            }
             for (var i = 0; i < 300; i++) {
               if (DSMetrica.userProfileID() != null && DSMetrica.yandexId.isNotEmpty) break;
               await Future.delayed(const Duration(milliseconds: 200));
             }
             final id = DSMetrica.userProfileID();
             if (id == null) return null;
-            Adapty().identify(id);
+            if (adaptyCustomUserId == null) {
+              await Adapty().identify(id);
+            }
             final builder = AdaptyProfileParametersBuilder();
             builder.setAppmetricaProfileId(id);
             if (DSMetrica.yandexId.isEmpty) {
@@ -281,6 +286,8 @@ class DSPurchaseManager extends ChangeNotifier {
     }
   }
 
+  Future<AdaptyProfile> getAdaptyProfile() async => Adapty().getProfile();
+  
   String getPlacementId(DSPaywallPlacement paywallPlacement) {
     if (_paywallPlacementTranslator != null) {
       return _paywallPlacementTranslator!(paywallPlacement);
