@@ -1,3 +1,7 @@
+## 1.0.6
+- allow ds_common 1.0.4 dependency to use old AppMetrica lib
+- deprecated field rcKey removed
+
 ## 1.0.5
 - fix adjust attribution for Adjust 5.0 for campaign
 
