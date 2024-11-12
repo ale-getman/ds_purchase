@@ -217,7 +217,7 @@ class DSPurchaseManager extends ChangeNotifier {
     }
     _adaptyUserId = adaptyCustomUserId;
 
-    bool isActual() => _adaptyUserId != adaptyCustomUserId;
+    bool isActual() => _adaptyUserId == adaptyCustomUserId;
     unawaited(() async {
       updateProfile(String name, Future<AdaptyProfileParametersBuilder?> Function() builderCallback) {
         unawaited(() async {
