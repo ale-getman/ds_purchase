@@ -14,8 +14,15 @@ dependencies:
   meta: ^1.0.0
   fimber: ^0.7.0
   firebase_analytics: '>=10.10.0 <12.0.0'
-  ds_common: ^1.0.4
+  # ds_common: ^1.0.4
+  ds_common:
+    git:
+      url: https://github.com/ale-getman/ds_common.git
+      ref: deferred_link
+  #   path: /Users/ag/Documents/devsect/ds_common/ds_common
   ds_ads: ^1.1.0
+  # ds_ads:
+  #   path: /Users/ag/Documents/devsect/ds_ads/ds_ads
 
   adapty_flutter: ^2.9.3
 
