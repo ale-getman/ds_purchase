@@ -20,8 +20,11 @@ dependencies:
       url: https://github.com/ale-getman/ds_common.git
       ref: deferred_link
   #   path: /Users/ag/Documents/devsect/ds_common/ds_common
-  ds_ads: ^1.1.0
-  # ds_ads:
+  # ds_ads: ^1.1.0
+  ds_ads:
+    git:
+      url: https://github.com/ale-getman/ds_ads.git
+      ref: adjust_deferred_link
   #   path: /Users/ag/Documents/devsect/ds_ads/ds_ads
 
   adapty_flutter: ^2.9.3
