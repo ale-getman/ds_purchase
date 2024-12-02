@@ -1,3 +1,6 @@
+## 1.0.7
+- remove Fimber dependency
+
 ## 1.0.6
 - allow ds_common 1.0.4 dependency to use old AppMetrica lib
 - deprecated field rcKey removed
