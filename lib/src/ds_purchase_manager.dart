@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:adapty_flutter/adapty_flutter.dart';
 import 'package:ds_ads/ds_ads.dart';
@@ -498,7 +499,7 @@ class DSPurchaseManager extends ChangeNotifier {
                   product.subscriptionDetails?.androidOfferId ?? 'null',
               'is_trial': isTrial,
             });
-        if (!kDebugMode) {
+        if (!kDebugMode && Platform.isIOS) {
           unawaited(sendFbPurchase(
             fbOrderId: product.vendorProductId,
             fbCurrency: product.price.currencyCode ?? 'none',
