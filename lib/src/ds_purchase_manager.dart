@@ -509,8 +509,7 @@ class DSPurchaseManager extends ChangeNotifier {
         }
       }
     } finally {
-      DSAdsAppOpen.unlockUntilAppResume();
-      DSAdsAppOpen.lockShowFor(const Duration(seconds: 5));
+      DSAdsAppOpen.unlockUntilAppResume(andLockFor: const Duration(seconds: 5));
     }
     return _isPremium;
   }
