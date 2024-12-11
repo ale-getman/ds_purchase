@@ -1,3 +1,7 @@
+## 1.0.8
+- remove sendFbPurchase (fb_mobile_purchase) event send for Android
+- dependencies updated
+
 ## 1.0.7
 - remove Fimber dependency
 
