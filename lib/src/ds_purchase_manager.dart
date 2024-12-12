@@ -122,7 +122,7 @@ class DSPurchaseManager extends ChangeNotifier {
       _isPremium = DSPrefs.I._isPremiumTemp();
 
       DSMetrica.registerAttrsHandler(() => {
-            'is_premium': isPremium,
+            'is_premium': isPremium.toString(),
           });
 
       unawaited(() async {
@@ -458,7 +458,7 @@ class DSPurchaseManager extends ChangeNotifier {
             .map((e) => '${e.key} -> ${e.value}')
             .join(';'),
       },
-      'is_premium2': newVal,
+      'is_premium2': newVal.toString(),
     });
     await _setPremium(newVal);
   }
