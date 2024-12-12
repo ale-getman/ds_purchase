@@ -70,6 +70,7 @@ class DSPurchaseManager extends ChangeNotifier {
   final Map<String, List<AdaptyPaywallProduct>> _adaptyProductsCache = {};
   final Map<String, AdaptyPaywall> _paywallsCache = {};
 
+  String? _adaptyUserId;
   var _isPremium = false;
   bool? _isDebugPremium;
 
@@ -119,6 +120,7 @@ class DSPurchaseManager extends ChangeNotifier {
 
     _isInitializing = true;
     try {
+      final startTime = DateTime.timestamp();
       _isPremium = DSPrefs.I._isPremiumTemp();
 
       DSMetrica.registerAttrsHandler(() => {
@@ -134,8 +136,6 @@ class DSPurchaseManager extends ChangeNotifier {
         _oneSignalTags['isPremium'] = isPremium;
         _oneSignalChanged?.call();
       }());
-
-      final startTime = DateTime.timestamp();
       unawaited(() async {
         try {
           // https://docs.adapty.io/docs/flutter-configuring
@@ -195,92 +195,7 @@ class DSPurchaseManager extends ChangeNotifier {
             }
           });
 
-          updateProfile(
-              String name,
-              Future<AdaptyProfileParametersBuilder?> Function()
-                  builderCallback) {
-            unawaited(() async {
-              final startTime2 = DateTime.timestamp();
-              try {
-                final builder = await builderCallback();
-                if (builder == null) {
-                  DSMetrica.reportEvent('Adapty profile setup $name',
-                      attributes: {
-                        'time_delta_ms': -1,
-                        'time_delta_sec': -1,
-                      });
-                  return;
-                }
-                await Adapty().updateProfile(builder.build());
-              } catch (e, stack) {
-                Fimber.e('adapty $name $e', stacktrace: stack);
-                return;
-              }
-              final time2 = DateTime.timestamp().difference(startTime2);
-              DSMetrica.reportEvent('Adapty profile setup $name', attributes: {
-                'time_delta_ms': time2.inMilliseconds,
-                'time_delta_sec': time2.inSeconds,
-              });
-            }());
-          }
-
-          updateProfile('firebase', () async {
-            // https://docs.adapty.io/docs/firebase-and-google-analytics#sdk-configuration
-            final builder = AdaptyProfileParametersBuilder()
-              ..setFirebaseAppInstanceId(
-                await FirebaseAnalytics.instance.appInstanceId,
-              );
-            return builder;
-          });
-
-          updateProfile('facebook', () async {
-            final result =
-                await _platformChannel.invokeMethod<String?>('getFbGUID');
-            if (result == null) return null;
-            final builder = AdaptyProfileParametersBuilder();
-            builder.setFacebookAnonymousId(result);
-            return builder;
-          });
-
-          updateProfile('metrica_user_id', () async {
-            if (adaptyCustomUserId != null) {
-              await Adapty().identify(adaptyCustomUserId);
-            }
-            for (var i = 0; i < 300; i++) {
-              if (DSMetrica.userProfileID() != null &&
-                  DSMetrica.yandexId.isNotEmpty) break;
-              await Future.delayed(const Duration(milliseconds: 200));
-            }
-            final id = DSMetrica.userProfileID();
-            if (id == null) return null;
-            if (adaptyCustomUserId == null) {
-              await Adapty().identify(id);
-            }
-            final builder = AdaptyProfileParametersBuilder();
-            builder.setAppmetricaProfileId(id);
-            if (DSMetrica.yandexId.isEmpty) {
-              Fimber.e(
-                  'metrica_user_id initialized incorrectly - yandexId was not ready',
-                  stacktrace: StackTrace.current);
-            }
-            builder.setAppmetricaDeviceId(DSMetrica.yandexId);
-            return builder;
-          });
-
-          updateProfile('adjust', () async {
-            String? id;
-            for (var i = 0; i < 50; i++) {
-              // ignore for compatibility with ds_common 0.1.35 and lower
-              // ignore: await_only_futures
-              id = await DSAdjust.getAdid();
-              if (id != null) break;
-              await Future.delayed(const Duration(milliseconds: 200));
-            }
-            if (id == null) return null;
-            final builder = AdaptyProfileParametersBuilder();
-            builder.setCustomStringAttribute(id, 'adjustId');
-            return builder;
-          });
+          await relogin(adaptyCustomUserId);
 
           try {
             await Future.wait(<Future>[
@@ -308,8 +223,100 @@ class DSPurchaseManager extends ChangeNotifier {
     }
   }
 
-  Future<AdaptyProfile> getAdaptyProfile() async => Adapty().getProfile();
+  Future<void> relogin(final String? adaptyCustomUserId) async {
+    if (_initializationCompleter.isCompleted) {
+      DSMetrica.reportEvent('Adapty profile changed', attributes: {
+        'adapty_user_id': adaptyCustomUserId ?? '',
+      });
+    }
+    _adaptyUserId = adaptyCustomUserId;
 
+    bool isActual() => _adaptyUserId == adaptyCustomUserId;
+    unawaited(() async {
+      updateProfile(String name, Future<AdaptyProfileParametersBuilder?> Function() builderCallback) {
+        unawaited(() async {
+          final startTime2 = DateTime.timestamp();
+          try {
+            final builder = await builderCallback();
+            if (builder == null) {
+              DSMetrica.reportEvent('Adapty profile setup $name', attributes: {
+                'time_delta_ms': -1,
+                'time_delta_sec': -1,
+              });
+              return;
+            }
+            if (!isActual()) return;
+            await Adapty().updateProfile(builder.build());
+          } catch (e, stack) {
+            Fimber.e('adapty $name $e', stacktrace: stack);
+            return;
+          }
+          final time2 = DateTime.timestamp().difference(startTime2);
+          DSMetrica.reportEvent('Adapty profile setup $name', attributes: {
+            'time_delta_ms': time2.inMilliseconds,
+            'time_delta_sec': time2.inSeconds,
+          });
+        }());
+      }
+
+      updateProfile('firebase', () async {
+        // https://docs.adapty.io/docs/firebase-and-google-analytics#sdk-configuration
+        final builder = AdaptyProfileParametersBuilder()
+          ..setFirebaseAppInstanceId(
+            await FirebaseAnalytics.instance.appInstanceId,
+          );
+        return builder;
+      });
+
+      updateProfile('facebook', () async {
+        final result = await _platformChannel.invokeMethod<String?>('getFbGUID');
+        if (result == null) return null;
+        final builder = AdaptyProfileParametersBuilder();
+        builder.setFacebookAnonymousId(result);
+        return builder;
+      });
+
+      updateProfile('metrica_user_id', () async {
+        if (adaptyCustomUserId != null) {
+          await Adapty().identify(adaptyCustomUserId);
+        }
+        for (var i = 0; i < 300; i++) {
+          if (DSMetrica.userProfileID() != null && DSMetrica.yandexId.isNotEmpty) break;
+          await Future.delayed(const Duration(milliseconds: 200));
+        }
+        final id = DSMetrica.userProfileID();
+        if (id == null) return null;
+        if (adaptyCustomUserId == null) {
+          await Adapty().identify(id);
+        }
+        final builder = AdaptyProfileParametersBuilder();
+        builder.setAppmetricaProfileId(id);
+        if (DSMetrica.yandexId.isEmpty) {
+          Fimber.e('metrica_user_id initialized incorrectly - yandexId was not ready', stacktrace: StackTrace.current);
+        }
+        builder.setAppmetricaDeviceId(DSMetrica.yandexId);
+        return builder;
+      });
+
+      updateProfile('adjust', () async {
+        String? id;
+        for (var i = 0; i < 50; i++) {
+          // ignore for compatibility with ds_common 0.1.35 and lower
+          // ignore: await_only_futures
+          id = await DSAdjust.getAdid();
+          if (id != null) break;
+          await Future.delayed(const Duration(milliseconds: 200));
+        }
+        if (id == null) return null;
+        final builder = AdaptyProfileParametersBuilder();
+        builder.setCustomStringAttribute(id, 'adjustId');
+        return builder;
+      });
+    }());
+  }
+
+  Future<AdaptyProfile> getAdaptyProfile() async => Adapty().getProfile();
+  
   String getPlacementId(DSPaywallPlacement paywallPlacement) {
     if (_paywallPlacementTranslator != null) {
       return _paywallPlacementTranslator!(paywallPlacement);
