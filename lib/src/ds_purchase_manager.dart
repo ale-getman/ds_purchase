@@ -28,8 +28,7 @@ class DSPurchaseManager extends ChangeNotifier {
   static DSPurchaseManager? _instance;
 
   static DSPurchaseManager get I {
-    assert(_instance != null,
-        'Call DSPurchaseManager(...) or its subclass and init(...) before use');
+    assert(_instance != null, 'Call DSPurchaseManager(...) or its subclass and init(...) before use');
     return _instance!;
   }
 
@@ -70,6 +69,7 @@ class DSPurchaseManager extends ChangeNotifier {
   final Map<String, List<AdaptyPaywallProduct>> _adaptyProductsCache = {};
   final Map<String, AdaptyPaywall> _paywallsCache = {};
 
+  String? _adaptyUserId;
   var _isPremium = false;
   bool? _isDebugPremium;
 
@@ -86,11 +86,9 @@ class DSPurchaseManager extends ChangeNotifier {
 
   String get paywallDefinedId => _paywallId;
   String get paywallId => _paywall?.placementId ?? 'not_loaded';
-  String get paywallType =>
-      '${_paywall?.remoteConfig?['type'] ?? 'not_defined'}';
+  String get paywallType => '${_paywall?.remoteConfig?['type'] ?? 'not_defined'}';
   String get paywallIdType => '$paywallId/$paywallType';
-  String get paywallVariant =>
-      '${_paywall?.remoteConfig?['variant_paywall'] ?? 'default'}';
+  String get paywallVariant => '${_paywall?.remoteConfig?['variant_paywall'] ?? 'default'}';
 
   List<AdaptyPaywallProduct>? get products => _products;
 
@@ -106,8 +104,7 @@ class DSPurchaseManager extends ChangeNotifier {
   /// Init [DSPurchaseManager]
   /// NB! You must setup app behaviour before call this method. Read https://docs.adapty.io/docs/flutter-configuring
   Future<void> init({String? adaptyCustomUserId}) async {
-    assert(DSMetrica.userIdType != DSMetricaUserIdType.none,
-        'Define non-none userIdType in DSMetrica.init');
+    assert(DSMetrica.userIdType != DSMetricaUserIdType.none, 'Define non-none userIdType in DSMetrica.init');
     assert(DSReferrer.isInitialized, 'Call DSReferrer.I.trySave() before');
 
     if (_isInitializing) {
@@ -119,6 +116,7 @@ class DSPurchaseManager extends ChangeNotifier {
 
     _isInitializing = true;
     try {
+      final startTime = DateTime.timestamp();
       _isPremium = DSPrefs.I._isPremiumTemp();
 
       DSMetrica.registerAttrsHandler(() => {
@@ -135,7 +133,6 @@ class DSPurchaseManager extends ChangeNotifier {
         _oneSignalChanged?.call();
       }());
 
-      final startTime = DateTime.timestamp();
       unawaited(() async {
         try {
           // https://docs.adapty.io/docs/flutter-configuring
@@ -163,8 +160,7 @@ class DSPurchaseManager extends ChangeNotifier {
           DSReferrer.I.registerChangedCallback((fields) async {
             // https://app.asana.com/0/1208203354836323/1208203354836334/f
             if ((fields['utm_source'] ?? '').isNotEmpty) {
-              var trackAttr =
-                  '${fields['utm_source'] ?? ''}&${fields['utm_content'] ?? ''}';
+              var trackAttr = '${fields['utm_source'] ?? ''}&${fields['utm_content'] ?? ''}';
               if (trackAttr.length > 49) trackAttr = trackAttr.substring(0, 49);
               logDebug('tracker_clickid=$trackAttr', stackDeep: 2);
               final builder = AdaptyProfileParametersBuilder();
@@ -177,110 +173,19 @@ class DSPurchaseManager extends ChangeNotifier {
             DSMetrica.reportEvent('Purchase changed', attributes: {
               'adapty_id': profile.profileId,
               'subscriptions': profile.subscriptions.keys.join(','),
-              'sub_data': profile.subscriptions.entries
-                  .map((e) => '${e.key} -> ${e.value}')
-                  .join(';'),
-              'access_levels': profile.accessLevels.entries
-                  .map((e) => '${e.key} -> ${e.value}')
-                  .join(';'),
+              'sub_data': profile.subscriptions.entries.map((e) => '${e.key} -> ${e.value}').join(';'),
+              'access_levels': profile.accessLevels.entries.map((e) => '${e.key} -> ${e.value}').join(';'),
             });
             if (!profile.subscriptions.values.any((e) => e.isActive)) {
               DSMetrica.reportEvent('Purchase canceled', attributes: {
                 'adapty_id': profile.profileId,
-                'sub_data': profile.subscriptions.entries
-                    .map((e) => '${e.key} -> ${e.value}')
-                    .join(';'),
+                'sub_data': profile.subscriptions.entries.map((e) => '${e.key} -> ${e.value}').join(';'),
               });
               _setPremium(false);
             }
           });
 
-          updateProfile(
-              String name,
-              Future<AdaptyProfileParametersBuilder?> Function()
-                  builderCallback) {
-            unawaited(() async {
-              final startTime2 = DateTime.timestamp();
-              try {
-                final builder = await builderCallback();
-                if (builder == null) {
-                  DSMetrica.reportEvent('Adapty profile setup $name',
-                      attributes: {
-                        'time_delta_ms': -1,
-                        'time_delta_sec': -1,
-                      });
-                  return;
-                }
-                await Adapty().updateProfile(builder.build());
-              } catch (e, stack) {
-                Fimber.e('adapty $name $e', stacktrace: stack);
-                return;
-              }
-              final time2 = DateTime.timestamp().difference(startTime2);
-              DSMetrica.reportEvent('Adapty profile setup $name', attributes: {
-                'time_delta_ms': time2.inMilliseconds,
-                'time_delta_sec': time2.inSeconds,
-              });
-            }());
-          }
-
-          updateProfile('firebase', () async {
-            // https://docs.adapty.io/docs/firebase-and-google-analytics#sdk-configuration
-            final builder = AdaptyProfileParametersBuilder()
-              ..setFirebaseAppInstanceId(
-                await FirebaseAnalytics.instance.appInstanceId,
-              );
-            return builder;
-          });
-
-          updateProfile('facebook', () async {
-            final result =
-                await _platformChannel.invokeMethod<String?>('getFbGUID');
-            if (result == null) return null;
-            final builder = AdaptyProfileParametersBuilder();
-            builder.setFacebookAnonymousId(result);
-            return builder;
-          });
-
-          updateProfile('metrica_user_id', () async {
-            if (adaptyCustomUserId != null) {
-              await Adapty().identify(adaptyCustomUserId);
-            }
-            for (var i = 0; i < 300; i++) {
-              if (DSMetrica.userProfileID() != null &&
-                  DSMetrica.yandexId.isNotEmpty) break;
-              await Future.delayed(const Duration(milliseconds: 200));
-            }
-            final id = DSMetrica.userProfileID();
-            if (id == null) return null;
-            if (adaptyCustomUserId == null) {
-              await Adapty().identify(id);
-            }
-            final builder = AdaptyProfileParametersBuilder();
-            builder.setAppmetricaProfileId(id);
-            if (DSMetrica.yandexId.isEmpty) {
-              Fimber.e(
-                  'metrica_user_id initialized incorrectly - yandexId was not ready',
-                  stacktrace: StackTrace.current);
-            }
-            builder.setAppmetricaDeviceId(DSMetrica.yandexId);
-            return builder;
-          });
-
-          updateProfile('adjust', () async {
-            String? id;
-            for (var i = 0; i < 50; i++) {
-              // ignore for compatibility with ds_common 0.1.35 and lower
-              // ignore: await_only_futures
-              id = await DSAdjust.getAdid();
-              if (id != null) break;
-              await Future.delayed(const Duration(milliseconds: 200));
-            }
-            if (id == null) return null;
-            final builder = AdaptyProfileParametersBuilder();
-            builder.setCustomStringAttribute(id, 'adjustId');
-            return builder;
-          });
+          await relogin(adaptyCustomUserId);
 
           try {
             await Future.wait(<Future>[
@@ -308,6 +213,98 @@ class DSPurchaseManager extends ChangeNotifier {
     }
   }
 
+  Future<void> relogin(final String? adaptyCustomUserId) async {
+    if (_initializationCompleter.isCompleted) {
+      DSMetrica.reportEvent('Adapty profile changed', attributes: {
+        'adapty_user_id': adaptyCustomUserId ?? '',
+      });
+    }
+    _adaptyUserId = adaptyCustomUserId;
+
+    bool isActual() => _adaptyUserId == adaptyCustomUserId;
+    unawaited(() async {
+      updateProfile(String name, Future<AdaptyProfileParametersBuilder?> Function() builderCallback) {
+        unawaited(() async {
+          final startTime2 = DateTime.timestamp();
+          try {
+            final builder = await builderCallback();
+            if (builder == null) {
+              DSMetrica.reportEvent('Adapty profile setup $name', attributes: {
+                'time_delta_ms': -1,
+                'time_delta_sec': -1,
+              });
+              return;
+            }
+            if (!isActual()) return;
+            await Adapty().updateProfile(builder.build());
+          } catch (e, stack) {
+            Fimber.e('adapty $name $e', stacktrace: stack);
+            return;
+          }
+          final time2 = DateTime.timestamp().difference(startTime2);
+          DSMetrica.reportEvent('Adapty profile setup $name', attributes: {
+            'time_delta_ms': time2.inMilliseconds,
+            'time_delta_sec': time2.inSeconds,
+          });
+        }());
+      }
+
+      updateProfile('firebase', () async {
+        // https://docs.adapty.io/docs/firebase-and-google-analytics#sdk-configuration
+        final builder = AdaptyProfileParametersBuilder()
+          ..setFirebaseAppInstanceId(
+            await FirebaseAnalytics.instance.appInstanceId,
+          );
+        return builder;
+      });
+
+      updateProfile('facebook', () async {
+        final result = await _platformChannel.invokeMethod<String?>('getFbGUID');
+        if (result == null) return null;
+        final builder = AdaptyProfileParametersBuilder();
+        builder.setFacebookAnonymousId(result);
+        return builder;
+      });
+
+      updateProfile('metrica_user_id', () async {
+        if (adaptyCustomUserId != null) {
+          await Adapty().identify(adaptyCustomUserId);
+        }
+        for (var i = 0; i < 300; i++) {
+          if (DSMetrica.userProfileID() != null && DSMetrica.yandexId.isNotEmpty) break;
+          await Future.delayed(const Duration(milliseconds: 200));
+        }
+        final id = DSMetrica.userProfileID();
+        if (id == null) return null;
+        if (adaptyCustomUserId == null) {
+          await Adapty().identify(id);
+        }
+        final builder = AdaptyProfileParametersBuilder();
+        builder.setAppmetricaProfileId(id);
+        if (DSMetrica.yandexId.isEmpty) {
+          Fimber.e('metrica_user_id initialized incorrectly - yandexId was not ready', stacktrace: StackTrace.current);
+        }
+        builder.setAppmetricaDeviceId(DSMetrica.yandexId);
+        return builder;
+      });
+
+      updateProfile('adjust', () async {
+        String? id;
+        for (var i = 0; i < 50; i++) {
+          // ignore for compatibility with ds_common 0.1.35 and lower
+          // ignore: await_only_futures
+          id = await DSAdjust.getAdid();
+          if (id != null) break;
+          await Future.delayed(const Duration(milliseconds: 200));
+        }
+        if (id == null) return null;
+        final builder = AdaptyProfileParametersBuilder();
+        builder.setCustomStringAttribute(id, 'adjustId');
+        return builder;
+      });
+    }());
+  }
+
   Future<AdaptyProfile> getAdaptyProfile() async => Adapty().getProfile();
 
   String getPlacementId(DSPaywallPlacement paywallPlacement) {
@@ -330,24 +327,18 @@ class DSPurchaseManager extends ChangeNotifier {
     }
 
     var attribution = <String, String>{};
-    if (data.trackerToken != null)
-      attribution['trackerToken'] = data.trackerToken!;
-    if (data.trackerName != null)
-      attribution['trackerName'] = data.trackerName!;
+    if (data.trackerToken != null) attribution['trackerToken'] = data.trackerToken!;
+    if (data.trackerName != null) attribution['trackerName'] = data.trackerName!;
     if (data.network != null) attribution['network'] = data.network!;
     if (data.campaign != null)
-      attribution['campaign'] = data
-          .campaign!; // from Unity sample (not exists in Flutter documentation)
+      attribution['campaign'] = data.campaign!; // from Unity sample (not exists in Flutter documentation)
     if (data.adgroup != null) attribution['adgroup'] = data.adgroup!;
     if (data.creative != null) attribution['creative'] = data.creative!;
     if (data.clickLabel != null) attribution['clickLabel'] = data.clickLabel!;
     if (data.costType != null) attribution['costType'] = data.costType!;
-    if (data.costAmount != null)
-      attribution['costAmount'] = data.costAmount!.toString();
-    if (data.costCurrency != null)
-      attribution['costCurrency'] = data.costCurrency!;
-    if (data.fbInstallReferrer != null)
-      attribution['fbInstallReferrer'] = data.fbInstallReferrer!;
+    if (data.costAmount != null) attribution['costAmount'] = data.costAmount!.toString();
+    if (data.costCurrency != null) attribution['costCurrency'] = data.costCurrency!;
+    if (data.fbInstallReferrer != null) attribution['fbInstallReferrer'] = data.fbInstallReferrer!;
 
     DSMetrica.reportEvent('adjust attribution', attributes: {
       ...attribution,
@@ -381,8 +372,7 @@ class DSPurchaseManager extends ChangeNotifier {
         notifyListeners();
         return;
       }
-      final paywall =
-          await Adapty().getPaywall(placementId: _paywallId, locale: lang);
+      final paywall = await Adapty().getPaywall(placementId: _paywallId, locale: lang);
       final products = await Adapty().getPaywallProducts(paywall: paywall);
       _paywall = paywall;
       _products = products;
@@ -400,11 +390,9 @@ class DSPurchaseManager extends ChangeNotifier {
       'paywall_id': _paywallId,
       'paywall_type': paywallType,
       'paywall_pages': '${(_paywall?.remoteConfig?['pages'] as List?)?.length}',
-      'paywall_items_md':
-          '${(_paywall?.remoteConfig?['items_md'] as List?)?.length}',
+      'paywall_items_md': '${(_paywall?.remoteConfig?['items_md'] as List?)?.length}',
       'paywall_products': _products?.length ?? -1,
-      'paywall_offer_buttons':
-          '${(_paywall?.remoteConfig?['offer_buttons'] as List?)?.length}',
+      'paywall_offer_buttons': '${(_paywall?.remoteConfig?['offer_buttons'] as List?)?.length}',
       'adapty_paywall': paywallVariant,
       'paywall_builder': '${paywall?.hasViewConfiguration}',
     });
@@ -424,8 +412,7 @@ class DSPurchaseManager extends ChangeNotifier {
     await _updatePaywall();
   }
 
-  Future<DSPaywallEntity> changeAndGetPaywall(
-      DSPaywallPlacement placementId) async {
+  Future<DSPaywallEntity> changeAndGetPaywall(DSPaywallPlacement placementId) async {
     try {
       await changePaywall(placementId);
 
@@ -450,13 +437,10 @@ class DSPurchaseManager extends ChangeNotifier {
     DSMetrica.reportEvent('Paywall: update purchases (internal)', attributes: {
       if (profile != null) ...{
         'subscriptions': profile.subscriptions.values
-            .map((v) => MapEntry('',
-                'vendor_id: ${v.vendorProductId} active: ${v.isActive} refund: ${v.isRefund}'))
+            .map((v) => MapEntry('', 'vendor_id: ${v.vendorProductId} active: ${v.isActive} refund: ${v.isRefund}'))
             .join(','),
         'adapty_id': profile.profileId,
-        'sub_data': profile.subscriptions.entries
-            .map((e) => '${e.key} -> ${e.value}')
-            .join(';'),
+        'sub_data': profile.subscriptions.entries.map((e) => '${e.key} -> ${e.value}').join(';'),
       },
       'is_premium2': newVal.toString(),
     });
@@ -473,8 +457,7 @@ class DSPurchaseManager extends ChangeNotifier {
   }
 
   Future<bool> buy({required AdaptyPaywallProduct product}) async {
-    final isTrial =
-        product.subscriptionDetails?.introductoryOffer.isNotEmpty == true;
+    final isTrial = product.subscriptionDetails?.introductoryOffer.isNotEmpty == true;
 
     DSMetrica.reportEvent('paywall_buy', fbSend: true, attributes: {
       'vendor_product': product.vendorProductId,
@@ -489,16 +472,13 @@ class DSPurchaseManager extends ChangeNotifier {
       final profile = await Adapty().makePurchase(product: product);
       await _updatePurchasesInternal(profile);
       if (isPremium) {
-        DSMetrica.reportEvent('paywall_complete_buy',
-            fbSend: true,
-            attributes: {
-              'paywall_id': paywallId,
-              'paywall_type': paywallType,
-              'vendor_product': product.vendorProductId,
-              'vendor_offer_id':
-                  product.subscriptionDetails?.androidOfferId ?? 'null',
-              'is_trial': isTrial,
-            });
+        DSMetrica.reportEvent('paywall_complete_buy', fbSend: true, attributes: {
+          'paywall_id': paywallId,
+          'paywall_type': paywallType,
+          'vendor_product': product.vendorProductId,
+          'vendor_offer_id': product.subscriptionDetails?.androidOfferId ?? 'null',
+          'is_trial': isTrial,
+        });
         if (!kDebugMode && Platform.isIOS) {
           unawaited(sendFbPurchase(
             fbOrderId: product.vendorProductId,
@@ -515,8 +495,7 @@ class DSPurchaseManager extends ChangeNotifier {
   }
 
   Future<bool> buyByWithDSProduct({required DSProductEntity dsProduct}) async {
-    final adaptyProduct = _products
-        ?.firstWhere((adaptyPr) => adaptyPr.vendorProductId == dsProduct.id);
+    final adaptyProduct = _products?.firstWhere((adaptyPr) => adaptyPr.vendorProductId == dsProduct.id);
 
     return adaptyProduct == null ? false : await buy(product: adaptyProduct);
   }
@@ -569,8 +548,7 @@ class DSPurchaseManager extends ChangeNotifier {
         'isTrial': isTrial,
       });
     } on PlatformException catch (e) {
-      throw Exception(
-          'Failed to set Facebook advertiser tracking: ${e.message}.');
+      throw Exception('Failed to set Facebook advertiser tracking: ${e.message}.');
     }
   }
 }
