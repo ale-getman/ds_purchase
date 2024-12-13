@@ -1,3 +1,6 @@
+## 1.1.0
+- add Adapty relogin
+
 ## 1.0.9
 - fix is_premium attributes sending to FirebaseAnalytics
 
