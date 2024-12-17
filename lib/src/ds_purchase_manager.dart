@@ -8,6 +8,7 @@ import 'package:ds_common/core/ds_constants.dart';
 import 'package:ds_common/core/ds_logging.dart';
 import 'package:ds_common/core/ds_metrica.dart';
 import 'package:ds_common/core/ds_prefs.dart';
+import 'package:ds_common/core/ds_primitives.dart';
 import 'package:ds_common/core/ds_referrer.dart';
 import 'package:ds_common/core/fimber/ds_fimber_base.dart';
 import 'package:ds_purchase/src/ds_purchase_types.dart';
@@ -32,15 +33,18 @@ class DSPurchaseManager extends ChangeNotifier {
     return _instance!;
   }
 
+  /// [adaptyKey] apiKey of Adapty
   /// [initPaywall] define what paywall should be preloaded on start
   /// [locale] current locale - replaced to [localeCallback]
   /// [paywallPlacementTranslator] allows to change DSPaywallType to Adapty paywall id
   DSPurchaseManager({
+    required String adaptyKey,
     required Set<DSPaywallPlacement> initPaywalls,
     required this.localeCallback,
     DSPaywallPlacementTranslator? paywallPlacementTranslator,
     VoidCallback? oneSignalChanged,
-  }) {
+  }) : _adaptyKey = adaptyKey
+  {
     assert(_instance == null);
     _paywallPlacementTranslator = paywallPlacementTranslator;
     _oneSignalChanged = oneSignalChanged;
@@ -54,8 +58,6 @@ class DSPurchaseManager extends ChangeNotifier {
   final _platformChannel = const MethodChannel('ds_purchase');
 
   final _initializationCompleter = Completer();
-  @Deprecated('Use initializationProcess property instead')
-  Future<void> get inititalizationProcess => _initializationCompleter.future;
   Future<void> get initializationProcess => _initializationCompleter.future;
 
   @protected
@@ -69,6 +71,7 @@ class DSPurchaseManager extends ChangeNotifier {
   final Map<String, List<AdaptyPaywallProduct>> _adaptyProductsCache = {};
   final Map<String, AdaptyPaywall> _paywallsCache = {};
 
+  final String _adaptyKey;
   String? _adaptyUserId;
   var _isPremium = false;
   bool? _isDebugPremium;
@@ -86,9 +89,9 @@ class DSPurchaseManager extends ChangeNotifier {
 
   String get paywallDefinedId => _paywallId;
   String get paywallId => _paywall?.placementId ?? 'not_loaded';
-  String get paywallType => '${_paywall?.remoteConfig?['type'] ?? 'not_defined'}';
+  String get paywallType => '${_paywall?.remoteConfig?.dictionary?['type'] ?? 'not_defined'}';
   String get paywallIdType => '$paywallId/$paywallType';
-  String get paywallVariant => '${_paywall?.remoteConfig?['variant_paywall'] ?? 'default'}';
+  String get paywallVariant => '${_paywall?.remoteConfig?.dictionary?['variant_paywall'] ?? 'default'}';
 
   List<AdaptyPaywallProduct>? get products => _products;
 
@@ -137,12 +140,16 @@ class DSPurchaseManager extends ChangeNotifier {
         try {
           // https://docs.adapty.io/docs/flutter-configuring
           try {
+            final config = AdaptyConfiguration(apiKey: _adaptyKey);
             if (kDebugMode || DSConstants.I.isInternalVersionOpt) {
-              await Adapty().setLogLevel(AdaptyLogLevel.verbose);
+              config.withLogLevel(AdaptyLogLevel.verbose);
             }
+            adaptyCustomUserId?.let((id) => config.withCustomerUserId(id));
+            _adaptyUserId = adaptyCustomUserId;
 
-            // Previously this call could stack for a long time. Need to recollect stat
-            Adapty().activate();
+            await Adapty().activate(
+              configuration: config,
+            );
           } catch (e, stack) {
             _stateSubject.add(e);
             Fimber.e('adapty $e', stacktrace: stack);
@@ -330,8 +337,9 @@ class DSPurchaseManager extends ChangeNotifier {
     if (data.trackerToken != null) attribution['trackerToken'] = data.trackerToken!;
     if (data.trackerName != null) attribution['trackerName'] = data.trackerName!;
     if (data.network != null) attribution['network'] = data.network!;
-    if (data.campaign != null)
+    if (data.campaign != null) {
       attribution['campaign'] = data.campaign!; // from Unity sample (not exists in Flutter documentation)
+    }
     if (data.adgroup != null) attribution['adgroup'] = data.adgroup!;
     if (data.creative != null) attribution['creative'] = data.creative!;
     if (data.clickLabel != null) attribution['clickLabel'] = data.clickLabel!;
@@ -389,10 +397,10 @@ class DSPurchaseManager extends ChangeNotifier {
       'language': lang,
       'paywall_id': _paywallId,
       'paywall_type': paywallType,
-      'paywall_pages': '${(_paywall?.remoteConfig?['pages'] as List?)?.length}',
-      'paywall_items_md': '${(_paywall?.remoteConfig?['items_md'] as List?)?.length}',
+      'paywall_pages': '${(_paywall?.remoteConfig?.dictionary?['pages'] as List?)?.length}',
+      'paywall_items_md': '${(_paywall?.remoteConfig?.dictionary?['items_md'] as List?)?.length}',
       'paywall_products': _products?.length ?? -1,
-      'paywall_offer_buttons': '${(_paywall?.remoteConfig?['offer_buttons'] as List?)?.length}',
+      'paywall_offer_buttons': '${(_paywall?.remoteConfig?.dictionary?['offer_buttons'] as List?)?.length}',
       'adapty_paywall': paywallVariant,
       'paywall_builder': '${paywall?.hasViewConfiguration}',
     });
@@ -419,7 +427,7 @@ class DSPurchaseManager extends ChangeNotifier {
       return DSPaywallEntity(
         placementId: placementId.val,
         name: paywall!.name,
-        remoteConfig: paywall?.remoteConfig,
+        remoteConfig: paywall?.remoteConfig?.dictionary,
         products: products!.map((p) => p.toAppProduct()).toList(),
       );
     } catch (e, trace) {
@@ -457,11 +465,11 @@ class DSPurchaseManager extends ChangeNotifier {
   }
 
   Future<bool> buy({required AdaptyPaywallProduct product}) async {
-    final isTrial = product.subscriptionDetails?.introductoryOffer.isNotEmpty == true;
+    final isTrial = product.isTrial;
 
     DSMetrica.reportEvent('paywall_buy', fbSend: true, attributes: {
       'vendor_product': product.vendorProductId,
-      'vendor_offer_id': product.subscriptionDetails?.androidOfferId ?? 'null',
+      'vendor_offer_id': product.subscription?.offer?.identifier.id ?? 'null',
       'paywall_type': paywallType,
       'adapty_paywall': paywallVariant,
       'placement': paywallDefinedId,
@@ -469,14 +477,35 @@ class DSPurchaseManager extends ChangeNotifier {
     });
     DSAdsAppOpen.lockUntilAppResume();
     try {
-      final profile = await Adapty().makePurchase(product: product);
-      await _updatePurchasesInternal(profile);
+      final res = await Adapty().makePurchase(product: product);
+      switch (res) {
+        case AdaptyPurchaseResultUserCancelled():
+          DSMetrica.reportEvent('paywall_canceled_buy', attributes: {
+            'paywall_id': paywallId,
+            'paywall_type': paywallType,
+            'vendor_product': product.vendorProductId,
+            'vendor_offer_id': product.subscription?.offer?.identifier.id ?? 'null',
+            'is_trial': isTrial,
+          });
+          return false;
+        case AdaptyPurchaseResultPending():
+            DSMetrica.reportEvent('paywall_pending_buy', attributes: {
+              'paywall_id': paywallId,
+              'paywall_type': paywallType,
+              'vendor_product': product.vendorProductId,
+              'vendor_offer_id': product.subscription?.offer?.identifier.id ?? 'null',
+              'is_trial': isTrial,
+            });
+            return false;
+        case AdaptyPurchaseResultSuccess():
+          await _updatePurchasesInternal(res.profile);
+      }
       if (isPremium) {
         DSMetrica.reportEvent('paywall_complete_buy', fbSend: true, attributes: {
           'paywall_id': paywallId,
           'paywall_type': paywallType,
           'vendor_product': product.vendorProductId,
-          'vendor_offer_id': product.subscriptionDetails?.androidOfferId ?? 'null',
+          'vendor_offer_id': product.subscription?.offer?.identifier.id ?? 'null',
           'is_trial': isTrial,
         });
         if (!kDebugMode && Platform.isIOS) {

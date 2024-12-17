@@ -16,7 +16,7 @@ dependencies:
   ds_common: ">=1.1.0 <3.0.0"
   ds_ads: ^1.2.6
 
-  adapty_flutter: ^2.9.3
+  adapty_flutter: ^3.2.4
 
 dev_dependencies:
   flutter_test:

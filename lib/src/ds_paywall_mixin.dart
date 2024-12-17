@@ -75,7 +75,7 @@ mixin DSPaywallMixin<T extends StatefulWidget>
         'paywall_type': pm.paywallType,
         'vendor_product': product.vendorProductId,
         'vendor_offer_id':
-            product.subscriptionDetails?.androidOfferId ?? 'null',
+            product.subscription?.offer?.identifier.id ?? 'null',
         'product_index': buttonIdx,
         'last_action': _lastStatAction,
         'time_sec': DateTime.timestamp().difference(_lastStatTime).inSeconds,

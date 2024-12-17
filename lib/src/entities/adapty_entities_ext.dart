@@ -11,12 +11,13 @@ extension AdaptyProductExt on AdaptyPaywallProduct {
       localizedPrice: price.localizedString,
       title: localizedTitle,
       description: localizedDescription,
-      androidOfferId: subscriptionDetails?.androidOfferId,
-      subscriptionPeriod: subscriptionDetails?.subscriptionPeriod.toAppPeriod(),
-      localizedSubscriptionPeriod:
-          subscriptionDetails?.localizedSubscriptionPeriod,
+      androidOfferId: subscription?.offer?.identifier.id,
+      subscriptionPeriod: subscription?.period.toAppPeriod(),
+      localizedSubscriptionPeriod: subscription?.localizedPeriod,
     );
   }
+
+  bool get isTrial => subscription?.offer?.identifier.type == AdaptySubscriptionOfferType.introductory;
 }
 
 extension AdaptySubscriptionPeriodExt on AdaptySubscriptionPeriod {
