@@ -4,6 +4,9 @@ import 'package:flutter/foundation.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:in_app_purchase_android/billing_client_wrappers.dart';
 import 'package:in_app_purchase_android/in_app_purchase_android.dart';
+import 'package:in_app_purchase_storekit/in_app_purchase_storekit.dart';
+import 'package:in_app_purchase_storekit/store_kit_2_wrappers.dart';
+import 'package:in_app_purchase_storekit/store_kit_wrappers.dart';
 
 @Deprecated('Use DSProduct and its inherited classes')
 typedef DSProductEntity = DSProduct;
@@ -68,7 +71,7 @@ sealed class DSProduct {
     text = text.replaceAll('{currency}', priceSymbol);
 
     text = text.replaceAll(
-        '{zero_price}', locPrice.replaceAll(RegExp(r'[\d,\.]+'), '0'));
+        '{zero_price}', locPrice.replaceAll(RegExp(r'[\d,.]+'), '0'));
 
     if (subscriptionPeriod?.daysInPeriod != null) {
       text = text.replaceAll(
@@ -221,6 +224,72 @@ class DSInAppGoogleProduct extends DSInAppProduct {
   bool get isTrial => offer!.pricingPhases.any((t) => t.priceAmountMicros == 0);
 }
 
+class DSInAppAppleProduct extends DSInAppProduct {
+  DSInAppAppleProduct({
+    required this.appleData,
+  });
+
+  @override
+  ProductDetails get data => appleData;
+
+  final AppStoreProductDetails appleData;
+
+  @override
+  late final DSSubscriptionPeriod? subscriptionPeriod = appleData.skProduct.subscriptionPeriod?.let((v) => DSSubscriptionPeriod.fromInAppApple(v));
+  @override
+  String? offerId;
+  @override
+  String? get localizedSubscriptionPeriod => '???';
+  @override
+  String? get localizedPrice => appleData.price;
+  @override
+  String? get currencySymbol => appleData.currencySymbol;
+
+  @override
+  bool get isTrial => id.contains('free');
+}
+
+class DSInAppApple2Product extends DSInAppProduct {
+  DSInAppApple2Product({
+    required this.appleData,
+    required this.offerId,
+  }) {
+    if (offerId == null && (appleData.sk2Product.subscription?.promotionalOffers.length ?? 0) > 1) {
+      throw Exception('offer_id does not identify the subscription uniquely');
+    }
+    if (offerId != null && appleData.sk2Product.subscription?.promotionalOffers.any((e) => e.id == offerId) != true) {
+      throw Exception('passed offer_id does not exist');
+    }
+  }
+
+  @override
+  ProductDetails get data => appleData;
+
+  final AppStoreProduct2Details appleData;
+
+  SK2SubscriptionOffer? get offer {
+    if (offerId == null) {
+      // use subscriptionIndex???
+      return appleData.sk2Product.subscription?.promotionalOffers.firstOrNull;
+    }
+    return appleData.sk2Product.subscription?.promotionalOffers.firstWhere((e) => e.id == offerId);
+  }
+
+  @override
+  late final DSSubscriptionPeriod? subscriptionPeriod = appleData.sk2Product.subscription?.let((v) => DSSubscriptionPeriod.fromInAppApple2(v.subscriptionPeriod));
+  @override
+  String? offerId;
+  @override
+  String? get localizedSubscriptionPeriod => '???';
+  @override
+  String? get localizedPrice => appleData.price;
+  @override
+  String? get currencySymbol => appleData.currencySymbol;
+
+  @override
+  bool get isTrial => id.contains('free');
+}
+
 enum DSSubscriptionUnit { month, year, week, day, unknown }
 
 class DSSubscriptionPeriod {
@@ -244,10 +313,34 @@ class DSSubscriptionPeriod {
 
   factory DSSubscriptionPeriod.fromInAppGoogle(List<PricingPhaseWrapper> pricingPhases) {
     // ToDo: TBD
-    final data = pricingPhases.first;
+    final data = pricingPhases.last;
     return DSSubscriptionPeriod(
       numOfUnits: data.billingCycleCount,
       unit: DSSubscriptionUnit.day,
+    );
+  }
+
+  factory DSSubscriptionPeriod.fromInAppApple(SKProductSubscriptionPeriodWrapper period) {
+    return DSSubscriptionPeriod(
+      numOfUnits: period.numberOfUnits,
+      unit: switch (period.unit) {
+        SKSubscriptionPeriodUnit.day => DSSubscriptionUnit.day,
+        SKSubscriptionPeriodUnit.week => DSSubscriptionUnit.week,
+        SKSubscriptionPeriodUnit.month => DSSubscriptionUnit.month,
+        SKSubscriptionPeriodUnit.year => DSSubscriptionUnit.year,
+      },
+    );
+  }
+
+  factory DSSubscriptionPeriod.fromInAppApple2(SK2SubscriptionPeriod period) {
+    return DSSubscriptionPeriod(
+      numOfUnits: period.value,
+      unit: switch (period.unit) {
+        SK2SubscriptionPeriodUnit.day => DSSubscriptionUnit.day,
+        SK2SubscriptionPeriodUnit.week => DSSubscriptionUnit.week,
+        SK2SubscriptionPeriodUnit.month => DSSubscriptionUnit.month,
+        SK2SubscriptionPeriodUnit.year => DSSubscriptionUnit.year,
+      },
     );
   }
 

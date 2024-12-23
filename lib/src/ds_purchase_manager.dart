@@ -19,6 +19,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:in_app_purchase_android/in_app_purchase_android.dart';
+import 'package:in_app_purchase_storekit/in_app_purchase_storekit.dart';
 import 'package:meta/meta.dart' as meta;
 
 part 'ds_prefs_part.dart';
@@ -139,6 +140,13 @@ class DSPurchaseManager extends ChangeNotifier {
       DSMetrica.registerAttrsHandler(() => {
         'is_premium': isPremium.toString(),
       });
+
+      // if (Platform.isIOS) {
+      //   // InAppPurchaseStoreKitPlatform.registerPlatform();
+      //   if (await InAppPurchaseStoreKitPlatform.enableStoreKit2())  {
+      //     DSMetrica.reportEvent('StoreKit2 enabled');
+      //   }
+      // }
 
       _inAppSubscription = InAppPurchase.instance.purchaseStream.listen((purchaseDetailsList) {
         _updateInAppPurchases(purchaseDetailsList);
@@ -403,7 +411,7 @@ class DSPurchaseManager extends ChangeNotifier {
 
   Future<bool> _loadNativePaywall() async {
     final config = _nativeRemoteConfig;
-    if (config.isEmpty || !Platform.isAndroid) {
+    if (config.isEmpty) {
       _paywall = null;
       return false;
     }
@@ -423,10 +431,26 @@ class DSPurchaseManager extends ChangeNotifier {
         }
         final products = <DSInAppProduct>[];
         for (final prod in prods) {
-          products.add(DSInAppGoogleProduct(
-            googleData: res.productDetails.firstWhere((e) => e.id == prod['product_id']) as GooglePlayProductDetails,
-            offerId: prod['offer_id'] as String?,
-          ));
+          if (Platform.isAndroid) {
+            products.add(DSInAppGoogleProduct(
+              googleData: res.productDetails.firstWhere((e) => e.id == prod['product_id']) as GooglePlayProductDetails,
+              offerId: prod['offer_id'] as String?,
+            ));
+          } else if (Platform.isIOS) {
+            final appleProd = res.productDetails.firstWhere((e) => e.id == prod['product_id']);
+            if (appleProd is AppStoreProductDetails) {
+              products.add(DSInAppAppleProduct(
+                appleData: appleProd,
+              ));
+            } else {
+              products.add(DSInAppApple2Product(
+                appleData: appleProd as AppStoreProduct2Details,
+                offerId: prod['offer_id'] as String?,
+              ));
+            }
+          } else {
+            throw Exception('Unsupported platform');
+          }
         }
       _paywall = DSInAppPaywall(
         placementId: _paywallId,
@@ -462,15 +486,17 @@ class DSPurchaseManager extends ChangeNotifier {
 
     final lang = localeCallback().languageCode;
     try {
+      _paywall = null;
       if (_paywallId.isEmpty) {
           logDebug('Empty paywall id');
-          _paywall = null;
           notifyListeners();
           return;
         }
 
       if (preferNativeFlow && allowFallbackNative) {
-        if (await _loadNativePaywall()) {
+        if (_nativeRemoteConfig.isEmpty) {
+          Fimber.e('nativeRemoteConfig not assigned', stacktrace: StackTrace.current);
+        } else if (await _loadNativePaywall()) {
           return;
         }
       }
@@ -480,11 +506,13 @@ class DSPurchaseManager extends ChangeNotifier {
       }
 
       if (!preferNativeFlow && allowFallbackNative) {
-        await _loadNativePaywall();
+        if (_nativeRemoteConfig.isEmpty) {
+          Fimber.e('nativeRemoteConfig not assigned', stacktrace: StackTrace.current);
+        } else {
+          await _loadNativePaywall();
+        }
         return;
       }
-
-      _paywall = null;
     } finally {
       if (_paywall != null) {
         DSMetrica.reportEvent('Paywall: paywall data updated', attributes: {
@@ -554,7 +582,14 @@ class DSPurchaseManager extends ChangeNotifier {
     }
   }
 
+  var _inBuy = false;
+
   Future<bool> buy({required DSProduct product}) async {
+    if (_inBuy) {
+      Fimber.w('duplicated buy call', stacktrace: StackTrace.current);
+      return false;
+    }
+
     final isTrial = product.isTrial;
 
     final attrs = {
@@ -570,24 +605,30 @@ class DSPurchaseManager extends ChangeNotifier {
     DSMetrica.reportEvent('paywall_buy', fbSend: true, attributes: attrs);
     DSAdsAppOpen.lockUntilAppResume();
     try {
-      switch (product) {
-        case DSAdaptyProduct():
-          final res = await Adapty().makePurchase(product: product.data);
-          switch (res) {
-            case AdaptyPurchaseResultUserCancelled():
+      _inBuy = true;
+      try {
+        switch (product) {
+          case DSAdaptyProduct():
+            final res = await Adapty().makePurchase(product: product.data);
+            switch (res) {
+              case AdaptyPurchaseResultUserCancelled():
+                DSMetrica.reportEvent('paywall_canceled_buy', attributes: attrs);
+                return false;
+              case AdaptyPurchaseResultPending():
+                DSMetrica.reportEvent('paywall_pending_buy', attributes: attrs);
+                return false;
+              case AdaptyPurchaseResultSuccess():
+                await _updateAdaptyPurchases(res.profile);
+            }
+          case DSInAppProduct():
+            final res = await InAppPurchase.instance.buyNonConsumable(
+                purchaseParam: PurchaseParam(productDetails: product.data));
+            if (!res) {
               DSMetrica.reportEvent('paywall_canceled_buy', attributes: attrs);
-              return false;
-            case AdaptyPurchaseResultPending():
-              DSMetrica.reportEvent('paywall_pending_buy', attributes: attrs);
-              return false;
-            case AdaptyPurchaseResultSuccess():
-              await _updateAdaptyPurchases(res.profile);
-          }
-        case DSInAppProduct():
-          final res = await InAppPurchase.instance.buyNonConsumable(purchaseParam: PurchaseParam(productDetails: product.data));
-          if (!res) {
-            DSMetrica.reportEvent('paywall_canceled_buy', attributes: attrs);
-          }
+            }
+        }
+      } catch (e, stack) {
+        Fimber.e('$e', stacktrace:  stack);
       }
       if (isPremium) {
         DSMetrica.reportEvent('paywall_complete_buy', fbSend: true, attributes: attrs);
@@ -601,6 +642,7 @@ class DSPurchaseManager extends ChangeNotifier {
         }
       }
     } finally {
+      _inBuy = false;
       DSAdsAppOpen.unlockUntilAppResume(andLockFor: const Duration(seconds: 5));
     }
     return _isPremium;
