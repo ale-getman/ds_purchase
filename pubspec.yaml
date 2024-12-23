@@ -16,7 +16,11 @@ dependencies:
   ds_common: ">=1.1.0 <3.0.0"
   ds_ads: ^1.2.6
 
-  adapty_flutter: ^3.2.4
+  adapty_flutter: ^3.2.5
+
+  in_app_purchase: ^3.2.0
+  in_app_purchase_platform_interface: ^1.4.0
+  in_app_purchase_android: ^0.3.6+12
 
 dev_dependencies:
   flutter_test:

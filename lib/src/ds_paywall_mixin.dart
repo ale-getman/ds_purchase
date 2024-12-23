@@ -1,15 +1,13 @@
 import 'dart:async';
 
-import 'package:adapty_flutter/adapty_flutter.dart';
 import 'package:ds_common/core/ds_metrica.dart';
+import 'package:ds_purchase/ds_purchase.dart';
 import 'package:flutter/material.dart';
-
-import 'ds_purchase_manager.dart';
 
 mixin DSPaywallMixin<T extends StatefulWidget>
     on State<T>, WidgetsBindingObserver {
   DSPurchaseManager get pm => DSPurchaseManager.I;
-  AdaptyPaywall get paywall => pm.paywall!;
+  DSPaywall get paywall => pm.paywall!;
 
   Future<void> Function() get closeCallback;
 
@@ -34,7 +32,7 @@ mixin DSPaywallMixin<T extends StatefulWidget>
 
   Future<void> closeButtonHandler() async {
     DSMetrica.reportEvent('Paywall: paywall closed', attributes: {
-      'paywall_id': pm.paywallId,
+      'paywall_id': pm.placementId,
       'paywall_type': pm.paywallType,
       'last_action': _lastStatAction,
       'time_sec': DateTime.timestamp().difference(_lastStatTime).inSeconds,
@@ -50,7 +48,7 @@ mixin DSPaywallMixin<T extends StatefulWidget>
         _lastStatAction = 'app resumed';
       case AppLifecycleState.paused:
         DSMetrica.reportEvent('Paywall: app turned off', attributes: {
-          'paywall_id': pm.paywallId,
+          'paywall_id': pm.placementId,
           'paywall_type': pm.paywallType,
           'last_action': _lastStatAction,
           'time_sec': DateTime.timestamp().difference(_lastStatTime).inSeconds,
@@ -62,7 +60,7 @@ mixin DSPaywallMixin<T extends StatefulWidget>
   }
 
   Future<bool> buy({
-    required AdaptyPaywallProduct product,
+    required DSProduct product,
     required int buttonIdx,
     required Map<String, Object> attributes,
   }) async {
@@ -71,11 +69,10 @@ mixin DSPaywallMixin<T extends StatefulWidget>
     setState(() {});
     try {
       DSMetrica.reportEvent('Paywall: click button', attributes: {
-        'paywall_id': pm.paywallId,
+        'paywall_id': pm.placementId,
         'paywall_type': pm.paywallType,
-        'vendor_product': product.vendorProductId,
-        'vendor_offer_id':
-            product.subscription?.offer?.identifier.id ?? 'null',
+        'vendor_product': product.id,
+        'vendor_offer_id': product.offerId ?? 'null',
         'product_index': buttonIdx,
         'last_action': _lastStatAction,
         'time_sec': DateTime.timestamp().difference(_lastStatTime).inSeconds,
