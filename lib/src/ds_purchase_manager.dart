@@ -20,6 +20,7 @@ import 'package:flutter/widgets.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:in_app_purchase_android/in_app_purchase_android.dart';
 import 'package:in_app_purchase_storekit/in_app_purchase_storekit.dart';
+import 'package:in_app_purchase_storekit/store_kit_wrappers.dart';
 import 'package:meta/meta.dart' as meta;
 
 part 'ds_prefs_part.dart';
@@ -621,8 +622,15 @@ class DSPurchaseManager extends ChangeNotifier {
                 await _updateAdaptyPurchases(res.profile);
             }
           case DSInAppProduct():
+            if (Platform.isIOS) {
+              final transactions = await SKPaymentQueueWrapper().transactions();
+              for (final transaction in transactions) {
+                await SKPaymentQueueWrapper().finishTransaction(transaction);
+              }
+            }
             final res = await InAppPurchase.instance.buyNonConsumable(
-                purchaseParam: PurchaseParam(productDetails: product.data));
+              purchaseParam: PurchaseParam(productDetails: product.data),
+            );
             if (!res) {
               DSMetrica.reportEvent('paywall_canceled_buy', attributes: attrs);
             }
