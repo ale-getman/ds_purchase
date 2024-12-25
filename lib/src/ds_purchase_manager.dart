@@ -83,12 +83,15 @@ class DSPurchaseManager extends ChangeNotifier {
 
   final String _adaptyKey;
   String? _adaptyUserId;
+  var _purchasesDisabled = false;
   var _isPremium = false;
   bool? _isDebugPremium;
   final _nativePaywallId = 'internal_fallback';
   late final Map<String, dynamic> _nativeRemoteConfig;
 
   bool get isPremium => _isDebugPremium ?? _isPremium;
+
+  bool get purchasesDisabled => _purchasesDisabled;
 
   var _paywallId = '';
   DSPaywallPlacementTranslator? _paywallPlacementTranslator;
@@ -140,6 +143,7 @@ class DSPurchaseManager extends ChangeNotifier {
 
       DSMetrica.registerAttrsHandler(() => {
         'is_premium': isPremium.toString(),
+        'purchases_disabled': purchasesDisabled.toString(),
       });
 
       // if (Platform.isIOS) {
@@ -225,6 +229,8 @@ class DSPurchaseManager extends ChangeNotifier {
 
           await relogin(adaptyCustomUserId);
 
+          if (purchasesDisabled) return;
+
           await Future.wait(<Future>[
             () async {
               if (_nativeRemoteConfig.isEmpty) return;
@@ -239,6 +245,10 @@ class DSPurchaseManager extends ChangeNotifier {
                 ids.add(_paywallId);
                 Fimber.i('Paywall: preload starting for $_paywallId');
                 await _updatePaywall(allowFallbackNative: true);
+                if (purchasesDisabled) {
+                  Fimber.i('Paywall: preload has broken', stacktrace: StackTrace.current);
+                  break;
+                }
               }
             }(),
             updatePurchases(),
@@ -469,25 +479,30 @@ class DSPurchaseManager extends ChangeNotifier {
   Future<bool> _loadAdaptyPaywall(String lang) async {
     try {
       final paywall = await Adapty().getPaywall(placementId: _paywallId, locale: lang);
-    final products = await Adapty().getPaywallProducts(paywall: paywall);
-    _paywall = DSAdaptyPaywall(
-      data: paywall,
-      adaptyProducts: products.map((e) => DSAdaptyProduct(data: e)).toList(),
-    );
-    _paywallsCache[_paywallId] = _paywall!;
-    return true;
+      final products = await Adapty().getPaywallProducts(paywall: paywall);
+      _paywall = DSAdaptyPaywall(
+        data: paywall,
+        adaptyProducts: products.map((e) => DSAdaptyProduct(data: e)).toList(),
+      );
+      _paywallsCache[_paywallId] = _paywall!;
+      return true;
     } catch (e, stack) {
+      if (e is AdaptyError) {
+        if (e.code == AdaptyErrorCode.billingUnavailable || e.code == AdaptyErrorCode.networkFailed) {
+          _purchasesDisabled = true;
+        }
+      }
       Fimber.e('adapty $e', stacktrace: stack);
       return false;
     }
   }
 
   Future<void> _updatePaywall({required bool allowFallbackNative}) async {
-    if (isPremium) return;
+    _paywall = null;
+    if (isPremium || purchasesDisabled) return;
 
     final lang = localeCallback().languageCode;
     try {
-      _paywall = null;
       if (_paywallId.isEmpty) {
           logDebug('Empty paywall id');
           notifyListeners();
@@ -573,12 +588,16 @@ class DSPurchaseManager extends ChangeNotifier {
     await _setPremium(newVal);
   }
 
-
   Future<void> updatePurchases() async {
     try {
       final profile = await Adapty().getProfile();
       await _updateAdaptyPurchases(profile);
     } catch (e, stack) {
+      if (e is AdaptyError) {
+        if (e.code == AdaptyErrorCode.billingUnavailable) {
+          _purchasesDisabled = true;
+        }
+      }
       Fimber.e('$e', stacktrace: stack);
     }
   }
@@ -672,6 +691,13 @@ class DSPurchaseManager extends ChangeNotifier {
     if (value == _isDebugPremium) return;
     DSPrefs.I._setDebugPurchased(value);
     _isDebugPremium = value;
+    notifyListeners();
+  }
+
+  void setDebugPurchaseDisabled(bool value) {
+    if (!DSConstants.I.isInternalVersion) return;
+    if (value == _purchasesDisabled) return;
+    _purchasesDisabled = value;
     notifyListeners();
   }
 
