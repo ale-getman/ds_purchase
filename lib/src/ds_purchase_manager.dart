@@ -245,7 +245,7 @@ class DSPurchaseManager extends ChangeNotifier {
                 if (ids.contains(_paywallId)) continue;
                 ids.add(_paywallId);
                 Fimber.i('Paywall: preload starting for $_paywallId');
-                await _updatePaywall(allowFallbackNative: true);
+                await _updatePaywall(allowFallbackNative: true, adaptyLoadTimeout: const Duration(seconds: 10));
                 if (purchasesDisabled) {
                   Fimber.i('Paywall: preload has broken', stacktrace: StackTrace.current);
                   break;
@@ -477,9 +477,9 @@ class DSPurchaseManager extends ChangeNotifier {
     }
   }
 
-  Future<bool> _loadAdaptyPaywall(String lang) async {
+  Future<bool> _loadAdaptyPaywall(String lang, {required Duration loadTimeout}) async {
     try {
-      final paywall = await Adapty().getPaywall(placementId: _paywallId, locale: lang);
+      final paywall = await Adapty().getPaywall(placementId: _paywallId, locale: lang, loadTimeout: loadTimeout);
       final products = await Adapty().getPaywallProducts(paywall: paywall);
       _paywall = DSAdaptyPaywall(
         data: paywall,
@@ -498,7 +498,7 @@ class DSPurchaseManager extends ChangeNotifier {
     }
   }
 
-  Future<void> _updatePaywall({required bool allowFallbackNative}) async {
+  Future<void> _updatePaywall({required bool allowFallbackNative, required Duration adaptyLoadTimeout}) async {
     _paywall = null;
     if (isPremium || purchasesDisabled) return;
 
@@ -518,7 +518,7 @@ class DSPurchaseManager extends ChangeNotifier {
         }
       }
 
-      if (await _loadAdaptyPaywall(lang)) {
+      if (await _loadAdaptyPaywall(lang, loadTimeout: adaptyLoadTimeout)) {
         return;
       }
 
@@ -559,11 +559,11 @@ class DSPurchaseManager extends ChangeNotifier {
       return;
     }
 
-    await _updatePaywall(allowFallbackNative: allowFallbackNative);
+    await _updatePaywall(allowFallbackNative: allowFallbackNative, adaptyLoadTimeout: const Duration(seconds: 1));
   }
 
   Future<void> reloadPaywall({bool allowFallbackNative = true}) async {
-    await _updatePaywall(allowFallbackNative: allowFallbackNative);
+    await _updatePaywall(allowFallbackNative: allowFallbackNative, adaptyLoadTimeout: const Duration(seconds: 1));
   }
 
   Future<void> _updateAdaptyPurchases(AdaptyProfile? profile) async {
