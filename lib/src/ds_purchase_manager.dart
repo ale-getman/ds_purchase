@@ -41,7 +41,7 @@ class DSPurchaseManager extends ChangeNotifier {
   /// [paywallPlacementTranslator] allows to change DSPaywallType to Adapty paywall id
   /// [oneSignalChanged] callback for process [DSPurchaseManager.oneSignalTags] changes
   /// [nativeRemoteConfig] config for in_app_purchase flow (usually when Adapty is unavailable)
-  /// [preferNativeFlow] load in_app_purchase before Adapty
+  /// [providerMode] prefer Adapty or  in_app_purchase
   DSPurchaseManager({
     required String adaptyKey,
     required Set<DSPaywallPlacement> initPaywalls,
@@ -49,10 +49,11 @@ class DSPurchaseManager extends ChangeNotifier {
     DSPaywallPlacementTranslator? paywallPlacementTranslator,
     VoidCallback? oneSignalChanged,
     String? nativeRemoteConfig,
-    this.preferNativeFlow = false,
+    this.providerMode = DSProviderMode.adaptyOnly,
   }) : _adaptyKey = adaptyKey
   {
     assert(_instance == null);
+    assert(nativeRemoteConfig != null || providerMode != DSProviderMode.adaptyOnly, 'set in_app_purchase provider to use nativeRemoteConfig');
     _paywallPlacementTranslator = paywallPlacementTranslator;
     _oneSignalChanged = oneSignalChanged;
     _nativeRemoteConfig = nativeRemoteConfig?.let((v) => jsonDecode(v)) ?? {};
@@ -76,7 +77,7 @@ class DSPurchaseManager extends ChangeNotifier {
 
   bool get isInitialized => _initializationCompleter.isCompleted;
 
-  final bool preferNativeFlow;
+  final DSProviderMode providerMode;
 
   final Map<String, DSPaywall> _paywallsCache = {};
   StreamSubscription? _inAppSubscription;
@@ -509,7 +510,7 @@ class DSPurchaseManager extends ChangeNotifier {
           return;
         }
 
-      if (preferNativeFlow && allowFallbackNative) {
+      if ((providerMode == DSProviderMode.nativeFirst) && allowFallbackNative) {
         if (_nativeRemoteConfig.isEmpty) {
           Fimber.e('nativeRemoteConfig not assigned', stacktrace: StackTrace.current);
         } else if (await _loadNativePaywall()) {
@@ -521,7 +522,7 @@ class DSPurchaseManager extends ChangeNotifier {
         return;
       }
 
-      if (!preferNativeFlow && allowFallbackNative) {
+      if ((providerMode == DSProviderMode.adaptyFirst) && allowFallbackNative) {
         if (_nativeRemoteConfig.isEmpty) {
           Fimber.e('nativeRemoteConfig not assigned', stacktrace: StackTrace.current);
         } else {

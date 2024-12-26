@@ -33,6 +33,12 @@ class DSPaywallPlacement {
   String toString() => val;
 }
 
+enum DSProviderMode {
+  adaptyOnly,
+  adaptyFirst,
+  nativeFirst,
+}
+
 sealed class DSProduct {
   String get id;
   String get providerName;
