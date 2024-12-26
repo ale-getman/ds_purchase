@@ -234,7 +234,7 @@ class DSPurchaseManager extends ChangeNotifier {
 
           await Future.wait(<Future>[
             () async {
-              if (_nativeRemoteConfig.isEmpty) return;
+              if (_nativeRemoteConfig.isEmpty || providerMode == DSProviderMode.adaptyOnly) return;
               Fimber.i('Paywall: preload starting for $_nativePaywallId');
               await _loadNativePaywall();
             }(),
