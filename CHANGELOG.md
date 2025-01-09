@@ -1,3 +1,10 @@
+## 2.0.0
+- add in_app_purchase support
+- add "purchases disabled" flag
+- change Adapty load timeout
+- pin adapty_flutter dependency
+- switch to ds_common DSAdLocker
+
 ## 1.1.0
 - add Adapty relogin
 
