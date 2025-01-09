@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:adapty_flutter/adapty_flutter.dart';
-import 'package:ds_ads/ds_ads.dart';
+import 'package:ds_common/core/ds_ad_locker.dart';
 import 'package:ds_common/core/ds_adjust.dart';
 import 'package:ds_common/core/ds_constants.dart';
 import 'package:ds_common/core/ds_logging.dart';
@@ -624,7 +624,7 @@ class DSPurchaseManager extends ChangeNotifier {
       'is_trial': isTrial,
     };
     DSMetrica.reportEvent('paywall_buy', fbSend: true, attributes: attrs);
-    DSAdsAppOpen.lockUntilAppResume();
+    DSAdLocker.appOpenLockUntilAppResume();
     try {
       _inBuy = true;
       try {
@@ -671,7 +671,7 @@ class DSPurchaseManager extends ChangeNotifier {
       }
     } finally {
       _inBuy = false;
-      DSAdsAppOpen.unlockUntilAppResume(andLockFor: const Duration(seconds: 5));
+      DSAdLocker.appOpenUnlockUntilAppResume(andLockFor: const Duration(seconds: 5));
     }
     return _isPremium;
   }
