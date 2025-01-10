@@ -1,3 +1,6 @@
+## 2.0.1
+- add Amplitude integration
+
 ## 2.0.0
 - add in_app_purchase support
 - add "purchases disabled" flag
