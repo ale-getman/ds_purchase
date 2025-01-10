@@ -25,14 +25,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "5.0.1"
+  amplitude_flutter:
+    dependency: transitive
+    description:
+      name: amplitude_flutter
+      sha256: "96570bb256fd17185b705230bcc1507690ad9d36ca348abe4bf28541315fb067"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.16.6"
   applovin_max:
     dependency: transitive
     description:
       name: applovin_max
-      sha256: dbaee193287772e29a8463aa8204df392ec96def45f29a96dfdf3d9b5b862e94
+      sha256: "3dc1aea840c7bbe1f91d876bd3e08437af898285f1a8b542faa007f27d821a2b"
       url: "https://pub.dev"
     source: hosted
-    version: "4.2.0"
+    version: "4.2.1"
   appmetrica_plugin:
     dependency: transitive
     description:
@@ -157,10 +165,10 @@ packages:
     dependency: transitive
     description:
       name: ds_common
-      sha256: c23f0cf0ee9736aa83766f629afd059195185bbe6d26c73879f49187250f9c41
+      sha256: "22695f3a68575bb60f67c37fb0d307512336575d0df9058e1afc9bb400ecdbcd"
       url: "https://pub.dev"
     source: hosted
-    version: "2.0.7"
+    version: "2.1.1"
   ds_purchase:
     dependency: "direct main"
     description:
@@ -422,6 +430,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.19.0"
+  js:
+    dependency: transitive
+    description:
+      name: js
+      sha256: c1b2e9b5ea78c45e1a0788d29606ba27dc5f71f019f32ca5140f61ef071838cf
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.7.1"
   json_annotation:
     dependency: transitive
     description:

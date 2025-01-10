@@ -347,15 +347,26 @@ class DSPurchaseManager extends ChangeNotifier {
       updateProfile('adjust', () async {
         String? id;
         for (var i = 0; i < 50; i++) {
-          // ignore for compatibility with ds_common 0.1.35 and lower
-          // ignore: await_only_futures
-          id = await DSAdjust.getAdid();
+          id = DSAdjust.getAdid();
           if (id != null) break;
           await Future.delayed(const Duration(milliseconds: 200));
         }
         if (id == null) return null;
         final builder = AdaptyProfileParametersBuilder();
         builder.setCustomStringAttribute(id, 'adjustId');
+        return builder;
+      });
+
+      updateProfile('amplitude', () async {
+        String? id;
+        for (var i = 0; i < 50; i++) {
+          id = await DSMetrica.getAmplitudeDeviceId();
+          if (id != null) break;
+          await Future.delayed(const Duration(milliseconds: 200));
+        }
+        if (id == null) return null;
+        final builder = AdaptyProfileParametersBuilder();
+        builder.setAmplitudeDeviceId(id);
         return builder;
       });
     }());
