@@ -193,7 +193,14 @@ class DSAdaptyProduct extends DSProduct {
   @override
   String? get offerId => data.subscription?.offer?.identifier.id;
   @override
-  String? get localizedSubscriptionPeriod => data.subscription?.localizedPeriod;
+  String? get localizedSubscriptionPeriod {
+    var s = data.subscription?.localizedPeriod;
+    if (s == null) return null;
+    if (s.startsWith('1 ')) {
+      s = s.substring(2);
+    }
+    return s;
+  }
   @override
   String? get localizedPrice => data.price.localizedString;
 
