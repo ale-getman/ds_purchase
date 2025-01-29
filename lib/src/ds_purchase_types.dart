@@ -70,6 +70,13 @@ sealed class DSProduct {
   String? get localizedSubscriptionPeriod;
   String? get localizedPrice;
 
+  double get pricePerDay => subscriptionPeriod != null
+  ? price / subscriptionPeriod!.daysInPeriod
+      : price;
+  double get pricePerWeek => subscriptionPeriod != null
+      ? price / subscriptionPeriod!.weeksInPeriod
+      : price;
+  
   late final String formattedPrice = price.toStringAsFixed(2);
 
   bool get isTrial;
@@ -80,19 +87,9 @@ sealed class DSProduct {
 
     text = text.replaceAll('{price}', locPrice);
 
-    var pricePerDay = (subscriptionPeriod != null
-        ? price / subscriptionPeriod!.daysInPeriod
-        : price)
-        .toStringAsFixed(1);
+    text = text.replaceAll('{price_per_day}', '$priceSymbol${pricePerDay.toStringAsFixed(1)}');
 
-    text = text.replaceAll('{price_per_day}', '$priceSymbol$pricePerDay');
-
-    final pricePerWeek = (subscriptionPeriod != null
-        ? price / subscriptionPeriod!.weeksInPeriod
-        : price)
-        .toStringAsFixed(1);
-
-    text = text.replaceAll('{price_per_week}', '$priceSymbol$pricePerWeek');
+    text = text.replaceAll('{price_per_week}', '$priceSymbol${pricePerWeek.toStringAsFixed(1)}');
 
     text = text.replaceAll('{currency}', priceSymbol);
 
