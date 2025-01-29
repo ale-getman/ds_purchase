@@ -80,6 +80,7 @@ class DSPurchaseManager extends ChangeNotifier {
   final DSProviderMode providerMode;
 
   final Map<String, DSPaywall> _paywallsCache = {};
+  var _isPreloadingPaywalls = true;
   StreamSubscription? _inAppSubscription;
 
   final String _adaptyKey;
@@ -97,7 +98,7 @@ class DSPurchaseManager extends ChangeNotifier {
   var _paywallId = '';
   DSPaywallPlacementTranslator? _paywallPlacementTranslator;
   late final Set<DSPaywallPlacement> _initPaywalls;
-
+  
   DSPaywall? _paywall;
 
   DSPaywall? get paywall => _paywall;
@@ -244,10 +245,14 @@ class DSPurchaseManager extends ChangeNotifier {
                 _paywallId = getPlacementId(pw);
                 if (ids.contains(_paywallId)) continue;
                 ids.add(_paywallId);
-                Fimber.i('Paywall: preload starting for $_paywallId');
+                if (!_isPreloadingPaywalls) {
+                  Fimber.d('Paywall: preload breaked since $_paywallId');
+                  break;
+                }
+                Fimber.d('Paywall: preload starting for $_paywallId');
                 await _updatePaywall(allowFallbackNative: true, adaptyLoadTimeout: const Duration(seconds: 10));
                 if (purchasesDisabled) {
-                  Fimber.i('Paywall: preload has broken', stacktrace: StackTrace.current);
+                  Fimber.d('Paywall: preload has broken', stacktrace: StackTrace.current);
                   break;
                 }
               }
@@ -504,7 +509,7 @@ class DSPurchaseManager extends ChangeNotifier {
           _purchasesDisabled = true;
         }
       }
-      Fimber.e('adapty $e', stacktrace: stack);
+      Fimber.e('adapty placement $_paywallId error: $e', stacktrace: stack);
       return false;
     }
   }
@@ -564,6 +569,7 @@ class DSPurchaseManager extends ChangeNotifier {
   Future<void> changePaywall(final DSPaywallPlacement paywallType, {bool allowFallbackNative = true}) async {
     final id = getPlacementId(paywallType);
     if (id == _paywallId && paywall != null) return;
+    _isPreloadingPaywalls = false;
     _paywallId = id;
     if (_paywallsCache[id] != null) {
       _paywall = _paywallsCache[id];
