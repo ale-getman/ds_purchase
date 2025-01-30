@@ -567,9 +567,9 @@ class DSPurchaseManager extends ChangeNotifier {
   }
 
   Future<void> changePaywall(final DSPaywallPlacement paywallType, {bool allowFallbackNative = true}) async {
+    _isPreloadingPaywalls = false;
     final id = getPlacementId(paywallType);
     if (id == _paywallId && paywall != null) return;
-    _isPreloadingPaywalls = false;
     _paywallId = id;
     if (_paywallsCache[id] != null) {
       _paywall = _paywallsCache[id];
