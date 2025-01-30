@@ -570,6 +570,10 @@ class DSPurchaseManager extends ChangeNotifier {
     _isPreloadingPaywalls = false;
     final id = getPlacementId(paywallType);
     if (id == _paywallId && paywall != null) return;
+    DSMetrica.reportEvent('Paywall: changed to $id', attributes: {
+      'prev_paywall': _paywallId,
+      'cached': _paywallsCache[id] != null,
+    });
     _paywallId = id;
     if (_paywallsCache[id] != null) {
       _paywall = _paywallsCache[id];
