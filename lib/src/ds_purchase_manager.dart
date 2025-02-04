@@ -451,41 +451,51 @@ class DSPurchaseManager extends ChangeNotifier {
       }
 
       _paywallId = _nativePaywallId;
-        final res = await InAppPurchase.instance.queryProductDetails((prods as List).map((e) => e['product_id'] as String).toSet());
-        if (res.notFoundIDs.isNotEmpty) {
-          Fimber.e('in_app_purchase products not found', attributes: {
-            'ids': res.notFoundIDs.toString()
-          });
-        }
-        final products = <DSInAppProduct>[];
-        for (final prod in prods) {
-          if (Platform.isAndroid) {
-            products.add(DSInAppGoogleProduct(
-              googleData: res.productDetails.firstWhere((e) => e.id == prod['product_id']) as GooglePlayProductDetails,
+      final pwId = _paywallId;
+      final res = await InAppPurchase.instance.queryProductDetails((prods as List).map((e) => e['product_id'] as String).toSet());
+      if (res.notFoundIDs.isNotEmpty) {
+        Fimber.e('in_app_purchase products not found', attributes: {
+          'ids': res.notFoundIDs.toString()
+        });
+      }
+      final products = <DSInAppProduct>[];
+      for (final prod in prods) {
+        if (Platform.isAndroid) {
+          products.add(DSInAppGoogleProduct(
+            googleData: res.productDetails.firstWhere((e) => e.id == prod['product_id']) as GooglePlayProductDetails,
+            offerId: prod['offer_id'] as String?,
+          ));
+        } else if (Platform.isIOS) {
+          final appleProd = res.productDetails.firstWhere((e) => e.id == prod['product_id']);
+          if (appleProd is AppStoreProductDetails) {
+            products.add(DSInAppAppleProduct(
+              appleData: appleProd,
+            ));
+          } else {
+            products.add(DSInAppApple2Product(
+              appleData: appleProd as AppStoreProduct2Details,
               offerId: prod['offer_id'] as String?,
             ));
-          } else if (Platform.isIOS) {
-            final appleProd = res.productDetails.firstWhere((e) => e.id == prod['product_id']);
-            if (appleProd is AppStoreProductDetails) {
-              products.add(DSInAppAppleProduct(
-                appleData: appleProd,
-              ));
-            } else {
-              products.add(DSInAppApple2Product(
-                appleData: appleProd as AppStoreProduct2Details,
-                offerId: prod['offer_id'] as String?,
-              ));
-            }
-          } else {
-            throw Exception('Unsupported platform');
           }
+        } else {
+          throw Exception('Unsupported platform');
         }
-      _paywall = DSInAppPaywall(
-        placementId: _paywallId,
+      }
+
+      final pw = DSInAppPaywall(
+        placementId: pwId,
         remoteConfig: config,
         inAppProducts: products,
       );
-      _paywallsCache[_paywallId] = _paywall!;
+      _paywallsCache[pwId] = pw;
+      if (pwId != _paywallId) {
+        Fimber.w('Paywall changed while loading', stacktrace: StackTrace.current, attributes: {
+          'new_paywall_id': _paywallId,
+          'paywall_id': pwId,
+        });
+        return false;
+      }
+      _paywall = pw;
       return true;
     } catch (e, stack) {
       Fimber.e('in_app_purchase $e', stacktrace: stack);
@@ -495,13 +505,22 @@ class DSPurchaseManager extends ChangeNotifier {
 
   Future<bool> _loadAdaptyPaywall(String lang, {required Duration loadTimeout}) async {
     try {
-      final paywall = await Adapty().getPaywall(placementId: _paywallId, locale: lang, loadTimeout: loadTimeout);
+      final pwId = _paywallId;
+      final paywall = await Adapty().getPaywall(placementId: pwId, locale: lang, loadTimeout: loadTimeout);
       final products = await Adapty().getPaywallProducts(paywall: paywall);
-      _paywall = DSAdaptyPaywall(
+      final pw = DSAdaptyPaywall(
         data: paywall,
         adaptyProducts: products.map((e) => DSAdaptyProduct(data: e)).toList(),
       );
-      _paywallsCache[_paywallId] = _paywall!;
+      _paywallsCache[pwId] = pw;
+      if (pwId != _paywallId) {
+        Fimber.w('Paywall changed while loading', stacktrace: StackTrace.current, attributes: {
+          'new_paywall_id': _paywallId,
+          'paywall_id': pwId,
+        });
+        return false;
+      }
+      _paywall = pw;
       return true;
     } catch (e, stack) {
       if (e is AdaptyError) {
