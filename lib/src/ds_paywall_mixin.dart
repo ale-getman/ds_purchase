@@ -33,6 +33,7 @@ mixin DSPaywallMixin<T extends StatefulWidget>
   Future<void> closeButtonHandler() async {
     DSMetrica.reportEvent('Paywall: paywall closed', attributes: {
       'paywall_id': pm.placementId,
+      'variant_paywall': pm.paywallVariant,
       'paywall_type': pm.paywallType,
       'last_action': _lastStatAction,
       'time_sec': DateTime.timestamp().difference(_lastStatTime).inSeconds,
@@ -49,6 +50,7 @@ mixin DSPaywallMixin<T extends StatefulWidget>
       case AppLifecycleState.paused:
         DSMetrica.reportEvent('Paywall: app turned off', attributes: {
           'paywall_id': pm.placementId,
+          'variant_paywall': pm.paywallVariant,
           'paywall_type': pm.paywallType,
           'last_action': _lastStatAction,
           'time_sec': DateTime.timestamp().difference(_lastStatTime).inSeconds,
@@ -70,6 +72,7 @@ mixin DSPaywallMixin<T extends StatefulWidget>
     try {
       DSMetrica.reportEvent('Paywall: click button', attributes: {
         'paywall_id': pm.placementId,
+        'variant_paywall': pm.paywallVariant,
         'paywall_type': pm.paywallType,
         'vendor_product': product.id,
         'vendor_offer_id': product.offerId ?? 'null',
