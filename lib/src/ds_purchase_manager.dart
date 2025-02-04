@@ -514,17 +514,28 @@ class DSPurchaseManager extends ChangeNotifier {
     }
   }
 
+  var _loadingPaywallId = '';
+
   Future<void> _updatePaywall({required bool allowFallbackNative, required Duration adaptyLoadTimeout}) async {
     _paywall = null;
     if (isPremium || purchasesDisabled) return;
 
+    final pwId = _paywallId;
+    if (pwId.isEmpty) {
+      logDebug('Empty paywall id');
+      notifyListeners();
+      return;
+    }
+    if (_loadingPaywallId == pwId) return;
+
     final lang = localeCallback().languageCode;
     try {
-      if (_paywallId.isEmpty) {
-          logDebug('Empty paywall id');
-          notifyListeners();
-          return;
-        }
+      _loadingPaywallId = pwId;
+
+      DSMetrica.reportEvent('Paywall: paywall update started', attributes: {
+        'language': lang,
+        'paywall_id': pwId,
+      });
 
       if ((providerMode == DSProviderMode.nativeFirst) && allowFallbackNative) {
         if (_nativeRemoteConfig.isEmpty) {
@@ -547,11 +558,14 @@ class DSPurchaseManager extends ChangeNotifier {
         return;
       }
     } finally {
+      _loadingPaywallId = '';
       if (_paywall != null) {
         DSMetrica.reportEvent('Paywall: paywall data updated', attributes: {
           'language': lang,
           'provider': '${_paywall?.providerName}',
-          'paywall_id': _paywallId,
+          'paywall_id': pwId,
+          if (pwId != _paywallId)
+            'actual_paywall_id': _paywallId,
           'paywall_type': paywallType,
           'paywall_pages': '${(remoteConfig['pages'] as List?)?.length}',
           'paywall_items_md': '${(remoteConfig['items_md'] as List?)?.length}',
