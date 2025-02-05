@@ -157,10 +157,10 @@ packages:
     dependency: transitive
     description:
       name: ds_ads
-      sha256: "095fa0787491b94c702be1e72f0f6e576098fcf4c7515cdf52d869e34bccac3c"
+      sha256: "61b6269928ec21064c38a8215a95435e56a9bcc66cb10f1cd30fb9ea4da9a23c"
       url: "https://pub.dev"
     source: hosted
-    version: "1.3.2"
+    version: "1.3.3"
   ds_common:
     dependency: transitive
     description:
@@ -175,7 +175,7 @@ packages:
       path: ".."
       relative: true
     source: path
-    version: "2.0.1"
+    version: "2.0.2"
   fake_async:
     dependency: transitive
     description:

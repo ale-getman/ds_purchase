@@ -1,3 +1,9 @@
+## 2.0.2
+- remove '1 ' prefix from localizedSubscriptionPeriod
+- fix paywalls preload and update
+- add event 'Paywall: changed to...' and 'Paywall: paywall update started'
+- add variant_paywall attribute for come events
+
 ## 2.0.1
 - add Amplitude integration
 
