@@ -1,4 +1,5 @@
 import 'package:adapty_flutter/adapty_flutter.dart';
+import 'package:collection/collection.dart';
 import 'package:ds_common/core/ds_primitives.dart';
 import 'package:flutter/foundation.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
@@ -67,8 +68,10 @@ sealed class DSProduct {
   DSSubscriptionPeriod? get subscriptionPeriod;
   DSSubscriptionPeriod? get trialPeriod;
   String? get offerId;
+  String? get subscriptionGroupIdentifierIOS;
   String? get localizedSubscriptionPeriod;
   String? get localizedPrice;
+  String? get localizedTrialPeriod;
 
   double get pricePerDay => subscriptionPeriod != null
   ? price / subscriptionPeriod!.daysInPeriod
@@ -103,6 +106,9 @@ sealed class DSProduct {
 
     text = text.replaceAll(
         '{subscription_period}', '$localizedSubscriptionPeriod');
+
+    text = text.replaceAll(
+        '{trial_period}', '$localizedTrialPeriod');
 
     return text;
   }
@@ -190,6 +196,8 @@ class DSAdaptyProduct extends DSProduct {
   @override
   String? get offerId => data.subscription?.offer?.identifier.id;
   @override
+  String? get subscriptionGroupIdentifierIOS => data.subscription?.groupIdentifier;
+  @override
   String? get localizedSubscriptionPeriod {
     var s = data.subscription?.localizedPeriod;
     if (s == null) return null;
@@ -203,6 +211,11 @@ class DSAdaptyProduct extends DSProduct {
 
   @override
   bool get isTrial => data.subscription?.offer?.identifier.type == AdaptySubscriptionOfferType.introductory;
+  @override
+  String? get localizedTrialPeriod {
+    if (!isTrial) return null;
+    return data.subscription?.offer?.phases.firstWhereOrNull((e) => e.paymentMode == AdaptyPaymentMode.freeTrial)?.localizedSubscriptionPeriod;
+  }
 }
 
 sealed class DSInAppProduct extends DSProduct {
@@ -256,6 +269,8 @@ class DSInAppGoogleProduct extends DSInAppProduct {
   @override
   String? offerId;
   @override
+  String? get subscriptionGroupIdentifierIOS => null;
+  @override
   String? get localizedSubscriptionPeriod => '???';
   @override
   String? get localizedPrice => offer!.pricingPhases.last.formattedPrice;
@@ -264,6 +279,11 @@ class DSInAppGoogleProduct extends DSInAppProduct {
 
   @override
   bool get isTrial => offer!.pricingPhases.any((t) => t.priceAmountMicros == 0);
+  @override
+  String? get localizedTrialPeriod {
+    if (!isTrial) return null;
+    return offer!.pricingPhases.firstWhereOrNull((t) => t.priceAmountMicros == 0)?.formattedPrice;
+  }
 }
 
 class DSInAppAppleProduct extends DSInAppProduct {
@@ -281,6 +301,9 @@ class DSInAppAppleProduct extends DSInAppProduct {
   @override
   String? offerId;
   @override
+  // ToDo: TBD
+  String? get subscriptionGroupIdentifierIOS => null;
+  @override
   String? get localizedSubscriptionPeriod => '???';
   @override
   String? get localizedPrice => appleData.price;
@@ -289,6 +312,10 @@ class DSInAppAppleProduct extends DSInAppProduct {
 
   @override
   bool get isTrial => id.contains('free');
+  @override
+  String? get localizedTrialPeriod {
+    throw Exception('Not implemented');
+  }
 }
 
 class DSInAppApple2Product extends DSInAppProduct {
@@ -322,6 +349,9 @@ class DSInAppApple2Product extends DSInAppProduct {
   @override
   String? offerId;
   @override
+  // ToDo: TBD
+  String? get subscriptionGroupIdentifierIOS => null;
+  @override
   String? get localizedSubscriptionPeriod => '???';
   @override
   String? get localizedPrice => appleData.price;
@@ -330,6 +360,10 @@ class DSInAppApple2Product extends DSInAppProduct {
 
   @override
   bool get isTrial => id.contains('free');
+  @override
+  String? get localizedTrialPeriod {
+    throw Exception('Not implemented');
+  }
 }
 
 enum DSSubscriptionUnit { month, year, week, day, unknown }
