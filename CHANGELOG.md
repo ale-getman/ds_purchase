@@ -1,3 +1,7 @@
+## 2.0.3
+- add DSProduct fields (subscriptionGroupIdentifierIOS, localizedTrialPeriod) and tag {trial_period}
+- fix change paywall reload bug
+
 ## 2.0.2
 - remove '1 ' prefix from localizedSubscriptionPeriod
 - fix paywalls preload and update
