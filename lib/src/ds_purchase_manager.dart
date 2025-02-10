@@ -602,7 +602,7 @@ class DSPurchaseManager extends ChangeNotifier {
   Future<void> changePaywall(final DSPaywallPlacement paywallType, {bool allowFallbackNative = true}) async {
     _isPreloadingPaywalls = false;
     final id = getPlacementId(paywallType);
-    if (id == _paywallId && paywall != null) return;
+    if (id == _paywallId && (paywall != null || _loadingPaywallId == id)) return;
     DSMetrica.reportEvent('Paywall: changed to $id', attributes: {
       'prev_paywall': _paywallId,
       'cached': _paywallsCache[id] != null,
