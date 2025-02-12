@@ -1,3 +1,6 @@
+## 2.0.4
+- add isPaywallCached method
+
 ## 2.0.3
 - add DSProduct fields (subscriptionGroupIdentifierIOS, localizedTrialPeriod) and tag {trial_period}
 - fix change paywall reload bug
