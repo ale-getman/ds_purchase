@@ -599,6 +599,11 @@ class DSPurchaseManager extends ChangeNotifier {
     }
   }
 
+  bool isPaywallCached(DSPaywallPlacement paywallType) {
+    final id = getPlacementId(paywallType);
+    return _paywallsCache[id] != null;
+  }
+
   Future<void> changePaywall(final DSPaywallPlacement paywallType, {bool allowFallbackNative = true}) async {
     _isPreloadingPaywalls = false;
     final id = getPlacementId(paywallType);
