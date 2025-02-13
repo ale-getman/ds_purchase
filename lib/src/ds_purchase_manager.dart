@@ -359,6 +359,7 @@ class DSPurchaseManager extends ChangeNotifier {
         if (id == null) return null;
         final builder = AdaptyProfileParametersBuilder();
         builder.setCustomStringAttribute(id, 'adjustId');
+        builder.setCustomStringAttribute(id, 'adjust_device_id');
         return builder;
       });
 
