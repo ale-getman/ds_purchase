@@ -1,3 +1,6 @@
+## 2.0.6
+- add extraAdaptyPurchaseCheck and extraInAppPurchaseCheck callbacks (allows to extend purchase criterias)
+
 ## 2.0.5
 - duplicate adjustId to adjust_device_id field https://app.asana.com/0/1208203354836323/1208658430143002
 
