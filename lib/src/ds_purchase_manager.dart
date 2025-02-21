@@ -50,6 +50,8 @@ class DSPurchaseManager extends ChangeNotifier {
     VoidCallback? oneSignalChanged,
     String? nativeRemoteConfig,
     this.providerMode = DSProviderMode.adaptyOnly,
+    this.extraAdaptyPurchaseCheck,
+    this.extraInAppPurchaseCheck,
   }) : _adaptyKey = adaptyKey
   {
     assert(_instance == null);
@@ -93,6 +95,9 @@ class DSPurchaseManager extends ChangeNotifier {
 
   bool get isPremium => _isDebugPremium ?? _isPremium;
 
+  Future<bool> Function(DSAdaptyProfile? profile, bool premium)? extraAdaptyPurchaseCheck;
+  Future<bool> Function(List<PurchaseDetails> purchases, bool premium)? extraInAppPurchaseCheck;
+
   bool get purchasesDisabled => _purchasesDisabled;
 
   var _paywallId = '';
@@ -127,7 +132,9 @@ class DSPurchaseManager extends ChangeNotifier {
 
   /// Init [DSPurchaseManager]
   /// NB! You must setup app behaviour before call this method. Read https://docs.adapty.io/docs/flutter-configuring
-  Future<void> init({String? adaptyCustomUserId}) async {
+  Future<void> init({
+    String? adaptyCustomUserId,
+  }) async {
     assert(DSMetrica.userIdType != DSMetricaUserIdType.none, 'Define non-none userIdType in DSMetrica.init');
     assert(DSReferrer.isInitialized, 'Call DSReferrer.I.trySave() before');
 
@@ -377,7 +384,7 @@ class DSPurchaseManager extends ChangeNotifier {
     }());
   }
 
-  Future<AdaptyProfile> getAdaptyProfile() async => Adapty().getProfile();
+  Future<DSAdaptyProfile> getAdaptyProfile() async => Adapty().getProfile();
 
   String getPlacementId(DSPaywallPlacement paywallPlacement) {
     if (_paywallPlacementTranslator != null) {
@@ -625,8 +632,11 @@ class DSPurchaseManager extends ChangeNotifier {
     await _updatePaywall(allowFallbackNative: allowFallbackNative, adaptyLoadTimeout: const Duration(seconds: 1));
   }
 
-  Future<void> _updateAdaptyPurchases(AdaptyProfile? profile) async {
-    final newVal = (profile?.subscriptions.values ?? []).any((e) => e.isActive);
+  Future<void> _updateAdaptyPurchases(DSAdaptyProfile? profile) async {
+    var newVal = (profile?.subscriptions.values ?? []).any((e) => e.isActive);
+    if (extraAdaptyPurchaseCheck != null) {
+      newVal = await extraAdaptyPurchaseCheck!(profile, newVal);
+    }
     DSMetrica.reportEvent('Paywall: update purchases (internal)', attributes: {
       if (profile != null) ...{
         'subscriptions': profile.subscriptions.values
@@ -641,7 +651,10 @@ class DSPurchaseManager extends ChangeNotifier {
   }
 
   Future<void> _updateInAppPurchases(List<PurchaseDetails> purchases) async {
-    final newVal = (purchases).any((e) => e.status == PurchaseStatus.purchased);
+    var newVal = (purchases).any((e) => e.status == PurchaseStatus.purchased);
+    if (extraInAppPurchaseCheck != null) {
+      newVal = await extraInAppPurchaseCheck!(purchases, newVal);
+    }
     DSMetrica.reportEvent('Paywall: update purchases (in_app_internal)', attributes: {
       'is_premium2': newVal.toString(),
     });

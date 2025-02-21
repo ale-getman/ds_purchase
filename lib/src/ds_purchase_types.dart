@@ -18,6 +18,8 @@ typedef DSPaywallEntity = DSPaywall;
 typedef DSPaywallPlacementTranslator = String Function(
     DSPaywallPlacement paywallType);
 
+typedef DSAdaptyProfile = AdaptyProfile;
+
 @immutable
 class DSPaywallPlacement {
   final String val;
