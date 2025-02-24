@@ -89,11 +89,12 @@ class DSPurchaseManager extends ChangeNotifier {
   String? _adaptyUserId;
   var _purchasesDisabled = false;
   var _isPremium = false;
+  var _isTempPremium = false;
   bool? _isDebugPremium;
   final _nativePaywallId = 'internal_fallback';
   late final Map<String, dynamic> _nativeRemoteConfig;
 
-  bool get isPremium => _isDebugPremium ?? _isPremium;
+  bool get isPremium => _isDebugPremium ?? _isPremium || _isTempPremium;
 
   Future<bool> Function(DSAdaptyProfile? profile, bool premium)? extraAdaptyPurchaseCheck;
   Future<bool> Function(List<PurchaseDetails> purchases, bool premium)? extraInAppPurchaseCheck;
@@ -249,6 +250,10 @@ class DSPurchaseManager extends ChangeNotifier {
             () async {
               final ids = <String>{};
               for (final pw in _initPaywalls) {
+                if (isPremium) {
+                  Fimber.d('Paywall: preload breaked by premium');
+                  break;
+                }
                 _paywallId = getPlacementId(pw);
                 if (ids.contains(_paywallId)) continue;
                 ids.add(_paywallId);
@@ -613,6 +618,7 @@ class DSPurchaseManager extends ChangeNotifier {
 
   Future<void> changePaywall(final DSPaywallPlacement paywallType, {bool allowFallbackNative = true}) async {
     _isPreloadingPaywalls = false;
+    if (isPremium) return;
     final id = getPlacementId(paywallType);
     if (id == _paywallId && (paywall != null || _loadingPaywallId == id)) return;
     DSMetrica.reportEvent('Paywall: changed to $id', attributes: {
@@ -754,11 +760,21 @@ class DSPurchaseManager extends ChangeNotifier {
     }
     DSPrefs.I._setPremiumTemp(value);
     _isPremium = value;
+    _isTempPremium = false;
     _oneSignalTags['isPremium'] = isPremium;
     _oneSignalChanged?.call();
     notifyListeners();
   }
 
+  /// set temporary premium improve user experience. Need to call updatePurchases() as early as possible
+  void setTempPremium() {
+    if (isPremium) return;
+    DSPrefs.I._setPremiumTemp(true);
+    _isTempPremium = true;
+    notifyListeners();
+  }
+
+  /// set premium mode for internal builds (just for test purposes)
   void setDebugPremium(bool value) {
     if (!DSConstants.I.isInternalVersion) return;
     if (value == _isDebugPremium) return;
