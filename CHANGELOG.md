@@ -1,3 +1,6 @@
+## 2.0.7
+- add setTempPremium method
+
 ## 2.0.6
 - add extraAdaptyPurchaseCheck and extraInAppPurchaseCheck callbacks (allows to extend purchase criterias)
 
