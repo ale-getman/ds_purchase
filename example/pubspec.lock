@@ -13,10 +13,10 @@ packages:
     dependency: transitive
     description:
       name: adapty_flutter
-      sha256: "895057937b9d3396cf7a08ba8de95012bef27fdf7b106ad0644a3692d81f5e0e"
+      sha256: "0d92b66e5582d3f6c0ae9ee4a0fc14fef0d99a7b6aeecf808470c2fc20663d09"
       url: "https://pub.dev"
     source: hosted
-    version: "3.2.5"
+    version: "3.3.2"
   adjust_sdk:
     dependency: transitive
     description:

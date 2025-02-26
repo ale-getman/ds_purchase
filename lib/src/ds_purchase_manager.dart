@@ -195,6 +195,7 @@ class DSPurchaseManager extends ChangeNotifier {
             await Adapty().activate(
               configuration: config,
             );
+            AdaptyUI().setObserver(_DSAdaptyUIObserver(this));
           } catch (e, stack) {
             notifyListeners();
             Fimber.e('adapty $e', stacktrace: stack);
@@ -296,20 +297,20 @@ class DSPurchaseManager extends ChangeNotifier {
 
     bool isActual() => _adaptyUserId == adaptyCustomUserId;
     unawaited(() async {
-      updateProfile(String name, Future<AdaptyProfileParametersBuilder?> Function() builderCallback) {
+      updateProfile(String name, Stream<(String, String?)> Function() builderCallback) {
         unawaited(() async {
+          var count = 0;
           final startTime2 = DateTime.timestamp();
           try {
-            final builder = await builderCallback();
-            if (builder == null) {
-              DSMetrica.reportEvent('Adapty profile setup $name', attributes: {
-                'time_delta_ms': -1,
-                'time_delta_sec': -1,
-              });
-              return;
+            await for (final res in builderCallback()) {
+              if (res.$2 == null) continue;
+              if (!isActual()) break;
+              count++;
+              await Adapty().setIntegrationIdentifier(
+                key: res.$1,
+                value: res.$2!,
+              );
             }
-            if (!isActual()) return;
-            await Adapty().updateProfile(builder.build());
           } catch (e, stack) {
             Fimber.e('adapty $name $e', stacktrace: stack);
             return;
@@ -318,28 +319,23 @@ class DSPurchaseManager extends ChangeNotifier {
           DSMetrica.reportEvent('Adapty profile setup $name', attributes: {
             'time_delta_ms': time2.inMilliseconds,
             'time_delta_sec': time2.inSeconds,
+            'is_user_actual': !isActual(),
+            'updated_items': count,
           });
         }());
       }
 
-      updateProfile('firebase', () async {
+      updateProfile('firebase', () async* {
         // https://docs.adapty.io/docs/firebase-and-google-analytics#sdk-configuration
-        final builder = AdaptyProfileParametersBuilder()
-          ..setFirebaseAppInstanceId(
-            await FirebaseAnalytics.instance.appInstanceId,
-          );
-        return builder;
+        yield ('firebase_app_instance_id', await FirebaseAnalytics.instance.appInstanceId);
       });
 
-      updateProfile('facebook', () async {
+      updateProfile('facebook', () async* {
         final result = await _platformChannel.invokeMethod<String?>('getFbGUID');
-        if (result == null) return null;
-        final builder = AdaptyProfileParametersBuilder();
-        builder.setFacebookAnonymousId(result);
-        return builder;
+        yield ('facebook_anonymous_id', result);
       });
 
-      updateProfile('metrica_user_id', () async {
+      updateProfile('metrica_user_id', () async* {
         if (adaptyCustomUserId != null) {
           await Adapty().identify(adaptyCustomUserId);
         }
@@ -348,43 +344,35 @@ class DSPurchaseManager extends ChangeNotifier {
           await Future.delayed(const Duration(milliseconds: 200));
         }
         final id = DSMetrica.userProfileID();
-        if (id == null) return null;
-        if (adaptyCustomUserId == null) {
+        if (id != null && adaptyCustomUserId == null) {
           await Adapty().identify(id);
         }
-        final builder = AdaptyProfileParametersBuilder();
-        builder.setAppmetricaProfileId(id);
+
+        yield ('appmetrica_profile_id', id);
         if (DSMetrica.yandexId.isEmpty) {
           Fimber.e('metrica_user_id initialized incorrectly - yandexId was not ready', stacktrace: StackTrace.current);
         }
-        builder.setAppmetricaDeviceId(DSMetrica.yandexId);
-        return builder;
+        yield ('appmetrica_device_id', DSMetrica.yandexId);
       });
 
-      updateProfile('adjust', () async {
+      updateProfile('adjust', () async* {
         String? id;
         for (var i = 0; i < 50; i++) {
           id = DSAdjust.getAdid();
           if (id != null) break;
           await Future.delayed(const Duration(milliseconds: 200));
         }
-        if (id == null) return null;
-        final builder = AdaptyProfileParametersBuilder();
-        builder.setCustomStringAttribute(id, 'adjustId');
-        return builder;
+        yield ('adjustId', id);
       });
 
-      updateProfile('amplitude', () async {
+      updateProfile('amplitude', () async* {
         String? id;
         for (var i = 0; i < 50; i++) {
           id = await DSMetrica.getAmplitudeDeviceId();
           if (id != null) break;
           await Future.delayed(const Duration(milliseconds: 200));
         }
-        if (id == null) return null;
-        final builder = AdaptyProfileParametersBuilder();
-        builder.setAmplitudeDeviceId(id);
-        return builder;
+        yield ('amplitude_device_id', id);
       });
     }());
   }
@@ -413,6 +401,11 @@ class DSPurchaseManager extends ChangeNotifier {
     if (adid == null) {
       // delayed update because of getAdid() implementation
       logDebug('Adjust setAdjustAttribution delayed');
+    } else {
+      unawaited(Adapty().setIntegrationIdentifier(
+        key: 'adjust_device_id',
+        value: adid,
+      ));
     }
 
     var attribution = <String, String>{};
@@ -440,8 +433,7 @@ class DSPurchaseManager extends ChangeNotifier {
       try {
         await Adapty().updateAttribution(
           attribution,
-          source: AdaptyAttributionSource.adjust,
-          networkUserId: adid,
+          source: 'adjust',
         );
       } catch (e, stack) {
         Fimber.e('adapty $e', stacktrace: stack);
@@ -638,6 +630,37 @@ class DSPurchaseManager extends ChangeNotifier {
     await _updatePaywall(allowFallbackNative: allowFallbackNative, adaptyLoadTimeout: const Duration(seconds: 1));
   }
 
+  Future<bool> tryShowPaywallBuilder() async {
+    final pw = _paywall;
+    if (pw == null) {
+      Fimber.e('Paywall is not ready', attributes: {
+        'paywall_id': _paywallId,
+      });
+      return false;
+    }
+    if (pw is! DSAdaptyPaywall) {
+      Fimber.e('Paywall is not Adapty', attributes: {
+        'paywall_id': _paywallId,
+      });
+      return false;
+    }
+    if (!pw.hasPaywallBuilder) {
+      return false;
+    }
+
+    try {
+      final paywallView = await AdaptyUI().createPaywallView(
+        paywall: pw.data,
+        preloadProducts: true,
+      );
+      await paywallView.present();
+      return true;
+    } catch (e, stack) {
+      Fimber.e('$e', stacktrace: stack);
+      return false;
+    }
+  }
+
   Future<void> _updateAdaptyPurchases(DSAdaptyProfile? profile) async {
     var newVal = (profile?.subscriptions.values ?? []).any((e) => e.isActive);
     if (extraAdaptyPurchaseCheck != null) {
@@ -818,5 +841,47 @@ class DSPurchaseManager extends ChangeNotifier {
     } on PlatformException catch (e) {
       throw Exception('Failed to set Facebook advertiser tracking: ${e.message}.');
     }
+  }
+}
+
+/// https://adapty.io/docs/flutter-handling-events
+class _DSAdaptyUIObserver extends AdaptyUIObserver {
+  final DSPurchaseManager _owner;
+
+  _DSAdaptyUIObserver(this._owner);
+
+  @override
+  void paywallViewDidPerformAction(AdaptyUIView view, AdaptyUIAction action) {
+    switch (action) {
+      case OpenUrlAction(url: final url):
+        DSMetrica.reportEvent('AdaptyBuilder open url', attributes: {
+          'url': url,
+        });
+        break;
+      case CloseAction():
+      case AndroidSystemBackAction():
+        DSMetrica.reportEvent('paywall_close', fbSend: true, attributes: {
+          'type': 'builder',
+        },
+        );
+        view.dismiss();
+        break;
+      case CustomAction(action: final action):
+        DSMetrica.reportEvent('AdaptyBuilder custom action', attributes: {
+          'action': action,
+        });
+        // TBD
+        break;
+    }
+  }
+
+  @override
+  void paywallViewDidFailRendering(AdaptyUIView view, AdaptyError error) {
+    Fimber.e('AdaptyBuilder fail rendering $error', stacktrace: StackTrace.current);
+  }
+
+  @override
+  void paywallViewDidFinishRestore(AdaptyUIView view, AdaptyProfile profile) {
+    _owner._updateAdaptyPurchases(profile);
   }
 }
