@@ -1,3 +1,19 @@
+## 2.1.0
+- add paywall builder support
+add the next code in your project after the line
+
+      AppPurchaseManager.I.logShowPaywall(loadedPaywall)
+
+code:
+
+      if (pw is DSAdaptyPaywall) {
+        final showed = await AppPurchaseManager.I.tryShowPaywallBuilder();
+        if (showed) {
+          close-your-own-paywall;
+          return;
+        }
+      }
+
 ## 2.0.7
 - add setTempPremium method
 
