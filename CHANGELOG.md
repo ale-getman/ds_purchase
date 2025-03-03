@@ -1,3 +1,6 @@
+## 2.1.1
+- fix extraAdaptyPurchaseCheck call for 'Purchase changed' case
+
 ## 2.1.0
 - add paywall builder support
 add the next code in your project after the line
