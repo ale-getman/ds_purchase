@@ -222,19 +222,23 @@ class DSPurchaseManager extends ChangeNotifier {
             }
           });
 
-          Adapty().didUpdateProfileStream.listen((profile) {
+          Adapty().didUpdateProfileStream.listen((profile) async {
             DSMetrica.reportEvent('Purchase changed', attributes: {
               'adapty_id': profile.profileId,
               'subscriptions': profile.subscriptions.keys.join(','),
               'sub_data': profile.subscriptions.entries.map((e) => '${e.key} -> ${e.value}').join(';'),
               'access_levels': profile.accessLevels.entries.map((e) => '${e.key} -> ${e.value}').join(';'),
             });
-            if (!profile.subscriptions.values.any((e) => e.isActive)) {
+            var newVal = profile.subscriptions.values.any((e) => e.isActive);
+            if (extraAdaptyPurchaseCheck != null) {
+              newVal = await extraAdaptyPurchaseCheck!(profile, newVal);
+            }
+            if (!newVal) {
               DSMetrica.reportEvent('Purchase canceled', attributes: {
                 'adapty_id': profile.profileId,
                 'sub_data': profile.subscriptions.entries.map((e) => '${e.key} -> ${e.value}').join(';'),
               });
-              _setPremium(false);
+              await _setPremium(false);
             }
           });
 
@@ -783,6 +787,9 @@ class DSPurchaseManager extends ChangeNotifier {
     }
     DSPrefs.I._setPremiumTemp(value);
     _isPremium = value;
+    if (_isTempPremium) {
+      DSMetrica.reportEvent('Paywall: temp premium finished');
+    }
     _isTempPremium = false;
     _oneSignalTags['isPremium'] = isPremium;
     _oneSignalChanged?.call();
