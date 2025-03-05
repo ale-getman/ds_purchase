@@ -94,8 +94,9 @@ class DSPurchaseManager extends ChangeNotifier {
   final _nativePaywallId = 'internal_fallback';
   late final Map<String, dynamic> _nativeRemoteConfig;
 
-  bool get isPremium => _isDebugPremium ?? _isPremium || _isTempPremium;
-
+  bool get isPremium => (_isDebugPremium ?? _isPremium) || _isTempPremium;
+  bool get isTempPremium => _isTempPremium;
+      
   Future<bool> Function(DSAdaptyProfile? profile, bool premium)? extraAdaptyPurchaseCheck;
   Future<bool> Function(List<PurchaseDetails> purchases, bool premium)? extraInAppPurchaseCheck;
 
