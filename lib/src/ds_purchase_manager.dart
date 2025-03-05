@@ -150,7 +150,7 @@ class DSPurchaseManager extends ChangeNotifier {
     _isInitializing = true;
     try {
       final startTime = DateTime.timestamp();
-      _isPremium = DSPrefs.I._isPremiumTemp();
+      _isTempPremium = DSPrefs.I._isPremiumTemp();
 
       DSMetrica.registerAttrsHandler(() => {
         'is_premium': isPremium.toString(),
@@ -783,15 +783,16 @@ class DSPurchaseManager extends ChangeNotifier {
   }
 
   Future<void> _setPremium(bool value) async {
+    if (_isTempPremium) {
+      DSMetrica.reportEvent('Paywall: temp premium finished');
+    }
+    _isTempPremium = false;
+
     if (_isPremium == value) {
       return;
     }
     DSPrefs.I._setPremiumTemp(value);
     _isPremium = value;
-    if (_isTempPremium) {
-      DSMetrica.reportEvent('Paywall: temp premium finished');
-    }
-    _isTempPremium = false;
     _oneSignalTags['isPremium'] = isPremium;
     _oneSignalChanged?.call();
     notifyListeners();
@@ -800,6 +801,9 @@ class DSPurchaseManager extends ChangeNotifier {
   /// set temporary premium improve user experience. Need to call updatePurchases() as early as possible
   void setTempPremium() {
     if (isPremium) return;
+    if (_isInitializing) {
+      Fimber.w('Set TempPremium for non-initialized DSPurchaseManager is not safe');
+    }
     DSPrefs.I._setPremiumTemp(true);
     _isTempPremium = true;
     notifyListeners();
