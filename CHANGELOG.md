@@ -1,3 +1,7 @@
+## 2.1.2
+- change premium flag initialization using TempPremium for more safety
+- change isTempPremium flag visibility to public
+
 ## 2.1.1
 - fix extraAdaptyPurchaseCheck call for 'Purchase changed' case
 
