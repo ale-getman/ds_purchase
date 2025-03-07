@@ -107,6 +107,7 @@ class DSPurchaseManager extends ChangeNotifier {
   late final Set<DSPaywallPlacement> _initPaywalls;
   
   DSPaywall? _paywall;
+  DSAdaptyProfile? _adaptyProfile;
 
   DSPaywall? get paywall => _paywall;
 
@@ -125,6 +126,19 @@ class DSPurchaseManager extends ChangeNotifier {
   String get paywallVariant => '${remoteConfig['variant_paywall'] ?? 'default'}';
 
   List<DSProduct>? get products => paywall?.products;
+
+  DSAdaptyProfile get adaptyProfile {
+    final p = _adaptyProfile;
+    if (p == null) throw Exception('Adapty profile is not initialized yet');
+    return p;
+  }
+
+  Future<DSAdaptyProfile> getAdaptyProfile() async {
+    if (_adaptyProfile == null) {
+      _adaptyProfile = await Adapty().getProfile();
+    }
+    return _adaptyProfile!;
+  }
 
   final _oneSignalTags = <String, dynamic>{};
   Map<String, dynamic> get oneSignalTags => Map.from(_oneSignalTags);
@@ -224,6 +238,7 @@ class DSPurchaseManager extends ChangeNotifier {
           });
 
           Adapty().didUpdateProfileStream.listen((profile) async {
+            _adaptyProfile = profile;
             DSMetrica.reportEvent('Purchase changed', attributes: {
               'adapty_id': profile.profileId,
               'subscriptions': profile.subscriptions.keys.join(','),
@@ -381,8 +396,6 @@ class DSPurchaseManager extends ChangeNotifier {
       });
     }());
   }
-
-  Future<DSAdaptyProfile> getAdaptyProfile() async => Adapty().getProfile();
 
   String getPlacementId(DSPaywallPlacement paywallPlacement) {
     if (_paywallPlacementTranslator != null) {
@@ -667,6 +680,9 @@ class DSPurchaseManager extends ChangeNotifier {
   }
 
   Future<void> _updateAdaptyPurchases(DSAdaptyProfile? profile) async {
+    if (profile != null) {
+      _adaptyProfile = profile;
+    }
     var newVal = (profile?.subscriptions.values ?? []).any((e) => e.isActive);
     if (extraAdaptyPurchaseCheck != null) {
       newVal = await extraAdaptyPurchaseCheck!(profile, newVal);
