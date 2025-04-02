@@ -310,6 +310,7 @@ class DSPurchaseManager extends ChangeNotifier {
   Future<void> relogin(final String? adaptyCustomUserId) async {
     if (_initializationCompleter.isCompleted) {
       DSMetrica.reportEvent('Adapty profile changed', attributes: {
+        'adapty_id': adaptyCustomUserId ?? '',
         'adapty_user_id': adaptyCustomUserId ?? '',
       });
     }
