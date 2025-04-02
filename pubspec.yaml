@@ -16,8 +16,6 @@ dependencies:
   collection: ^1.16.0
 
   ds_common: ^2.1.1
-  # just to force update dependency. Remove ds_ads in future
-  ds_ads: ^1.3.2
 
   adapty_flutter: ^3.3.2
 
