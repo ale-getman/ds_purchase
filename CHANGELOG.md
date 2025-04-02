@@ -1,3 +1,8 @@
+## 2.1.3
+- remove ds_ads dependency
+- add adapty_id to 'Adapty profile changed' event
+- method getAdaptyProfile return cached result now
+
 ## 2.1.2
 - change premium flag initialization using TempPremium for more safety
 - change isTempPremium flag visibility to public
