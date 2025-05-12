@@ -96,7 +96,7 @@ class DSPurchaseManager extends ChangeNotifier {
 
   bool get isPremium => (_isDebugPremium ?? _isPremium) || _isTempPremium;
   bool get isTempPremium => _isTempPremium;
-      
+
   Future<bool> Function(DSAdaptyProfile? profile, bool premium)? extraAdaptyPurchaseCheck;
   Future<bool> Function(List<PurchaseDetails> purchases, bool premium)? extraInAppPurchaseCheck;
 
@@ -105,7 +105,7 @@ class DSPurchaseManager extends ChangeNotifier {
   var _paywallId = '';
   DSPaywallPlacementTranslator? _paywallPlacementTranslator;
   late final Set<DSPaywallPlacement> _initPaywalls;
-  
+
   DSPaywall? _paywall;
   DSAdaptyProfile? _adaptyProfile;
 
@@ -134,9 +134,7 @@ class DSPurchaseManager extends ChangeNotifier {
   }
 
   Future<DSAdaptyProfile> getAdaptyProfile() async {
-    if (_adaptyProfile == null) {
-      _adaptyProfile = await Adapty().getProfile();
-    }
+    _adaptyProfile ??= await Adapty().getProfile();
     return _adaptyProfile!;
   }
 
@@ -263,12 +261,12 @@ class DSPurchaseManager extends ChangeNotifier {
           if (purchasesDisabled) return;
 
           await Future.wait(<Future>[
-            () async {
+                () async {
               if (_nativeRemoteConfig.isEmpty || providerMode == DSProviderMode.adaptyOnly) return;
               Fimber.i('Paywall: preload starting for $_nativePaywallId');
               await _loadNativePaywall();
             }(),
-            () async {
+                () async {
               final ids = <String>{};
               for (final pw in _initPaywalls) {
                 if (isPremium) {
@@ -410,7 +408,7 @@ class DSPurchaseManager extends ChangeNotifier {
       case DSAdaptyPaywall():
         await Adapty().logShowPaywall(paywall: paywall.data);
       case DSInAppPaywall():
-        // do nothing
+      // do nothing
     }
   }
 
@@ -744,7 +742,7 @@ class DSPurchaseManager extends ChangeNotifier {
       'variant_paywall': paywallVariant,
       'vendor_offer_id': product.offerId ?? 'null',
       'placement': placementDefinedId,
-      'is_trial': isTrial,
+      'is_trial': isTrial ? 1 : 0,
     };
     DSMetrica.reportEvent('paywall_buy', fbSend: true, attributes: attrs);
     DSAdLocker.appOpenLockUntilAppResume();
@@ -891,8 +889,7 @@ class _DSAdaptyUIObserver extends AdaptyUIObserver {
       case AndroidSystemBackAction():
         DSMetrica.reportEvent('paywall_close', fbSend: true, attributes: {
           'type': 'builder',
-        },
-        );
+        });
         view.dismiss();
         break;
       case CustomAction(action: final action):
