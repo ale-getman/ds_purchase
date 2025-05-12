@@ -1,3 +1,6 @@
+## 2.1.4
+- fix paywall_buy event send to Firebase Analytics
+
 ## 2.1.3
 - remove ds_ads dependency
 - add adapty_id to 'Adapty profile changed' event
