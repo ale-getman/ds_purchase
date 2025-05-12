@@ -558,7 +558,7 @@ class DSPurchaseManager extends ChangeNotifier {
 
   Future<void> _updatePaywall({required bool allowFallbackNative, required Duration adaptyLoadTimeout}) async {
     _paywall = null;
-    if (isPremium || purchasesDisabled) return;
+    if (purchasesDisabled) return;
 
     final pwId = _paywallId;
     if (pwId.isEmpty) {
@@ -627,7 +627,7 @@ class DSPurchaseManager extends ChangeNotifier {
 
   Future<void> changePaywall(final DSPaywallPlacement paywallType, {bool allowFallbackNative = true}) async {
     _isPreloadingPaywalls = false;
-    if (isPremium) return;
+    if (isPremium && !paywallType.allowedForPremium) return;
     final id = getPlacementId(paywallType);
     if (id == _paywallId && (paywall != null || _loadingPaywallId == id)) return;
     DSMetrica.reportEvent('Paywall: changed to $id', attributes: {
@@ -734,6 +734,24 @@ class DSPurchaseManager extends ChangeNotifier {
 
     final isTrial = product.isTrial;
 
+    bool isPurchased() {
+      if (product is DSAdaptyProduct) {
+        var id = product.data.vendorProductId;
+        product.data.subscription?.basePlanId?.let((v) => id += ':$v');
+        try {
+          return adaptyProfile.subscriptions[id]!.isActive;
+        } catch (e, stack) {
+          Fimber.e('$e', stacktrace: stack, attributes: {
+            'product_id': product.id,
+          });
+          return false;
+        }
+    } else {
+        // ToDo: need to be fixed
+        return isPremium;
+      }
+    }
+
     final attrs = {
       'provider': product.providerName,
       'paywall_id': placementId,
@@ -779,7 +797,7 @@ class DSPurchaseManager extends ChangeNotifier {
       } catch (e, stack) {
         Fimber.e('$e', stacktrace:  stack);
       }
-      if (isPremium) {
+      if (isPurchased()) {
         DSMetrica.reportEvent('paywall_complete_buy', fbSend: true, attributes: attrs);
         if (!kDebugMode && Platform.isIOS) {
           unawaited(sendFbPurchase(
@@ -794,7 +812,7 @@ class DSPurchaseManager extends ChangeNotifier {
       _inBuy = false;
       DSAdLocker.appOpenUnlockUntilAppResume(andLockFor: const Duration(seconds: 5));
     }
-    return _isPremium;
+    return isPurchased();
   }
 
   Future<void> _setPremium(bool value) async {

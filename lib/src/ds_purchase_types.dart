@@ -23,8 +23,11 @@ typedef DSAdaptyProfile = AdaptyProfile;
 @immutable
 class DSPaywallPlacement {
   final String val;
+  final bool allowedForPremium;
 
-  const DSPaywallPlacement(this.val);
+  const DSPaywallPlacement(this.val, {
+    this.allowedForPremium = false,
+  });
 
   @override
   int get hashCode => val.hashCode;
