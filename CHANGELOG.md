@@ -1,3 +1,6 @@
+## 2.1.5
+- add allowedForPremium flag support (can subscribe more than one subscription)
+
 ## 2.1.4
 - fix paywall_buy event send to Firebase Analytics
 
