@@ -15,7 +15,11 @@ dependencies:
   firebase_analytics: '>=10.10.0 <12.0.0'
   collection: ^1.16.0
 
-  ds_common: ^2.1.1
+  # ds_common: ^2.1.1
+  ds_common:
+    git:
+      url: https://github.com/ale-getman/ds_common.git
+      ref: adjust_global_parameter
 
   adapty_flutter: ^3.4.1
 
